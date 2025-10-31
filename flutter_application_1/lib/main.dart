@@ -17,17 +17,20 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
    home:Scaffold(
-     appBar:AppBar(
-      leading:Icon( Icons.menu),
-      backgroundColor: Colors.green,
-     ),
-    backgroundColor:  const Color.fromARGB(255, 48, 88, 121),
-    body:Container(
-     
 
+    backgroundColor:  const Color.fromARGB(255, 130, 53, 133),
+  
+    body:Container(
+   decoration: const BoxDecoration(
+    image:DecorationImage(
+      image: AssetImage('Assert/home.png'),
+     fit:BoxFit.cover,
+      ),
+      
+   ),
     ),
    ),
-    );
+ );
     
   }
 }
