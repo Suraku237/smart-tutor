@@ -17,22 +17,21 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
    home:Scaffold(
-   appBar: AppBar(
-    toolbarHeight: 100,
-    
-    backgroundColor:null,
-   title: Text('login to Smart-tutor'),
-   ),
-    backgroundColor:  const Color.fromARGB(255, 130, 53, 133),
-  
-    body:Container(
-   decoration: const BoxDecoration(
+  // Home page
+    body:Column(
+      children: [
+        Expanded(
+          child: Container(      
+        decoration: const BoxDecoration(
     image:DecorationImage(
       image: AssetImage('Assert/home.png'),
      fit:BoxFit.cover,
       ),
-      
    ),
+   )
+   )
+  ],
+   
     ),
    ),
  );
