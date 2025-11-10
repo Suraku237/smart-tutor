@@ -87,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 // Title text
                 const Text(
-                  "Welcome to SMART TUTOR",
+                  "SMART TUTOR Login",
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
