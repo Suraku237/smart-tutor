@@ -4,6 +4,7 @@ from routes.subject_routes import subject_bp
 from routes.lesson_routes import lesson_bp
 from routes.quiz_routes import quiz_bp
 from routes.feedback_routes import feedback_bp # added
+from routes.progress_routes import progress_bp
 
 
 app = Flask(__name__)
@@ -18,6 +19,9 @@ app.register_blueprint(lesson_bp, url_prefix='/api')
 app.register_blueprint(quiz_bp, url_prefix = '/api')
 
 app.register_blueprint(feedback_bp, url_prefix='/api') # added
+
+app.register_blueprint(progress_bp, url_prefix='/api') # added
+
 
 
 @app.route('/')

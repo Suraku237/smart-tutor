@@ -1,6 +1,2 @@
-POST http://127.0.0.1:5000/api/feedback
-Content-Type: application/json
-
-{
-  "feedback": "That lesson was so difficult"
-}
+GET 
+http://127.0.0.1:5000/api/progress/1
