@@ -18,6 +18,7 @@ cursor = db.cursor(dictionary=True)
 @auth_bp.route('/register', methods=['POST'])
 def register_user():
     data = request.get_json()
+    print("Reecieved Data:", data)
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
@@ -36,7 +37,7 @@ def register_user():
     return jsonify({"message": "User registered successfully"}), 201
 
 # 🧩 Login user route
-@auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/auth/login', methods=['POST'])
 def login_user():
     data = request.get_json()
     email = data.get('email')

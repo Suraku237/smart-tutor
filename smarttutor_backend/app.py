@@ -18,8 +18,6 @@ app.register_blueprint(lesson_bp, url_prefix='/api')
 
 app.register_blueprint(quiz_bp, url_prefix = '/api')
 
-
-
 app.register_blueprint(feedback_bp, url_prefix='/api') # added
 
 app.register_blueprint(progress_bp, url_prefix='/api') # added
