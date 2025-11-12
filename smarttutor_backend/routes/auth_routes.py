@@ -16,24 +16,18 @@ cursor = db.cursor(dictionary=True)
 
 # 🧩 Register user route
 @auth_bp.route('/register', methods=['POST'])
-def register_user():
+def register():
     data = request.get_json()
-    print("Reecieved Data:", data)
-    name = data.get('name')
+
+    username = data.get('username')
     email = data.get('email')
     password = data.get('password')
 
-    if not all([name, email, password]):
+    if not username or not email or not password:
         return jsonify({"error": "All fields are required"}), 400
 
-    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-    existing = cursor.fetchone()
-    if existing:
-        return jsonify({"error": "Email already exists"}), 400
-
-    cursor.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)", (name, email, password))
-    db.commit()
-
+    # Simulate saving user to database
+    print(f"✅ Registered user: {username}, {email}")
     return jsonify({"message": "User registered successfully"}), 201
 
 # 🧩 Login user route
