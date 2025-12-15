@@ -1,4 +1,6 @@
+// lib/screens/result_screen.dart
 import 'package:flutter/material.dart';
+import 'main_navigation.dart'; // Add this import
 
 class ResultScreen extends StatelessWidget {
   final int score;
@@ -62,7 +64,7 @@ class ResultScreen extends StatelessWidget {
                     BoxShadow(
                       color: Colors.black12,
                       blurRadius: 8,
-                      offset: Offset(0, 3),
+                      offset: const Offset(0, 3),
                     )
                   ],
                 ),
@@ -71,19 +73,19 @@ class ResultScreen extends StatelessWidget {
                     Text(
                       "Your Score",
                       style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                          const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       "$score / $total",
                       style:
-                          TextStyle(fontSize: 45, fontWeight: FontWeight.w900),
+                          const TextStyle(fontSize: 45, fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       getMessage(),
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18),
+                      style: const TextStyle(fontSize: 18),
                     ),
                   ],
                 ),
@@ -107,6 +109,7 @@ class ResultScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 20),
                   ),
                   onPressed: () {
+                    // Go back to quiz screen
                     Navigator.pop(context);
                   },
                 ),
@@ -114,7 +117,7 @@ class ResultScreen extends StatelessWidget {
 
               const SizedBox(height: 15),
 
-              // BACK HOME BUTTON
+              // BACK HOME BUTTON - UPDATED
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
@@ -123,16 +126,17 @@ class ResultScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    side: BorderSide(color: Colors.deepPurple, width: 2),
+                    side: const BorderSide(color: Colors.deepPurple, width: 2),
                   ),
                   child: const Text(
                     "Back to Home",
                     style: TextStyle(fontSize: 18, color: Colors.deepPurple),
                   ),
                   onPressed: () {
+                    // Navigate back to the main navigation (home screen)
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (_) => const HomePage()),
+                      MaterialPageRoute(builder: (_) => const MainNavigation()),
                       (route) => false,
                     );
                   },
@@ -141,19 +145,6 @@ class ResultScreen extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text('Home Page'),
       ),
     );
   }

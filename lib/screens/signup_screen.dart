@@ -1,3 +1,4 @@
+// lib/screens/signup_screen.dart
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 
@@ -130,7 +131,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               "Create Account",
-                              style: TextStyle(fontSize: 18),
+                              style: TextStyle(fontSize: 18, color: Colors.white),
                             ),
                     ),
                   ),

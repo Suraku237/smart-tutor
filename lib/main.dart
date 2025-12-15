@@ -1,6 +1,6 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
-
 
 void main() {
   runApp(const SmartTutorApp());
@@ -14,17 +14,21 @@ class SmartTutorApp extends StatelessWidget {
     return MaterialApp(
       title: 'Smart Tutor',
       debugShowCheckedModeBanner: false,
-
-      // App Theme (You can change colors later)
+      
+      // App Theme
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.white,
+        primarySwatch: Colors.deepPurple,
+        scaffoldBackgroundColor: Colors.grey.shade100,
         fontFamily: 'Roboto',
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.deepPurple,
+          elevation: 3,
+          centerTitle: true,
+        ),
       ),
 
       // First screen to load
-      home: SplashScreen(),
+      home: const SplashScreen(),
     );
   }
 }
