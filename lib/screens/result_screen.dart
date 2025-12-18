@@ -29,7 +29,7 @@ class ResultScreen extends StatelessWidget {
     double percent = (score / total) * 100;
 
     if (percent >= 80) return Colors.green.shade300;
-    if (percent >= 50) return Colors.orange.shade300;
+    if (percent <= 50) return Colors.orange.shade300;
     return Colors.red.shade300;
   }
 
