@@ -1,5 +1,7 @@
-// lib/screens/signup_screen.dart
+// lib/screens/signup_screen.dart - Updated with API
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import '../services/api_service.dart';
 import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -14,31 +16,79 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
 
   bool isLoading = false;
   bool obscurePass = true;
+  bool obscureConfirmPass = true;
+  String errorMessage = '';
 
-  void createAccount() {
+  void createAccount() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => isLoading = true);
+    final password = passwordController.text;
+    final confirmPassword = confirmPasswordController.text;
 
-    // Simulated delay for sign-up
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() => isLoading = false);
+    if (password != confirmPassword) {
+      setState(() {
+        errorMessage = "Passwords don't match";
+      });
+      return;
+    }
 
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+
+    final response = await ApiService.register(
+      nameController.text.trim(),
+      emailController.text.trim(),
+      password,
+    );
+
+    setState(() => isLoading = false);
+
+    if (response.success && response.data != null) {
+      // Success - navigate to main app
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
-    });
+      
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully! Please login.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      // Show error
+      setState(() {
+        errorMessage = response.message;
+      });
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Registration Failed'),
+          content: Text(response.message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -55,6 +105,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
             const SizedBox(height: 10),
             const Text("Join SmartTutor and start learning smarter"),
+
+            // ERROR MESSAGE
+            if (errorMessage.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 20),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        errorMessage,
+                        style: TextStyle(color: Colors.red.shade800),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             const SizedBox(height: 40),
 
@@ -79,6 +153,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   // EMAIL
                   TextFormField(
                     controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.email),
                       labelText: "Email",
@@ -116,6 +191,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     },
                   ),
 
+                  const SizedBox(height: 20),
+
+                  // CONFIRM PASSWORD
+                  TextFormField(
+                    controller: confirmPasswordController,
+                    obscureText: obscureConfirmPass,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.lock),
+                      labelText: "Confirm Password",
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                            obscureConfirmPass ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () {
+                          setState(() => obscureConfirmPass = !obscureConfirmPass);
+                        },
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value!.isEmpty) return "Please confirm your password";
+                      return null;
+                    },
+                  ),
+
                   const SizedBox(height: 30),
 
                   // SIGN UP BUTTON
@@ -128,10 +227,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
                       child: isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? const SpinKitThreeBounce(
+                              color: Colors.white,
+                              size: 20,
+                            )
                           : const Text(
                               "Create Account",
-                              style: TextStyle(fontSize: 18, color: Colors.white),
+                              style: TextStyle(fontSize: 18),
                             ),
                     ),
                   ),
