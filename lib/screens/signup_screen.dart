@@ -1,39 +1,31 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart'; // make sure you create login screen later
+import 'login_screen.dart';
 
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+class _SignUpScreenState extends State<SignUpScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
-  late AnimationController _controller;
-  late Animation<double> _logoScale;
-  late Animation<double> _fadeText;
+  bool isLoading = false;
+  bool obscurePass = true;
 
-  @override
-  void initState() {
-    super.initState();
+  void createAccount() {
+    if (!_formKey.currentState!.validate()) return;
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    );
+    setState(() => isLoading = true);
 
-    _logoScale = Tween<double>(begin: 0.4, end: 1.0)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    // Simulated delay for sign-up
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() => isLoading = false);
 
-    _fadeText = Tween<double>(begin: 0, end: 1)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
-
-    _controller.forward();
-
-    // AUTOMATIC NAVIGATION AFTER 3 SECONDS
-    Future.delayed(const Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -42,74 +34,135 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.deepPurple,
+      backgroundColor: Colors.grey.shade100,
 
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const SizedBox(height: 60),
 
-            // LOGO ANIMATION
-            ScaleTransition(
-              scale: _logoScale,
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: const Icon(
-                  Icons.school,
-                  color: Colors.deepPurple,
-                  size: 70,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // APP NAME
-            FadeTransition(
-              opacity: _fadeText,
-              child: const Text(
-                "SmartTutor",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 1.2,
-                ),
+            const Text(
+              "Create Account ✨",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
               ),
             ),
 
             const SizedBox(height: 10),
+            const Text("Join SmartTutor and start learning smarter"),
 
-            // TAGLINE
-            FadeTransition(
-              opacity: _fadeText,
-              child: Text(
-                "Learn smarter, not harder",
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white.withOpacity(0.85),
-                ),
+            const SizedBox(height: 40),
+
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  // FULL NAME
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.person),
+                      labelText: "Full Name",
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) =>
+                        value!.isEmpty ? "Name is required" : null,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // EMAIL
+                  TextFormField(
+                    controller: emailController,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.email),
+                      labelText: "Email",
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value!.isEmpty) return "Email required";
+                      if (!value.contains("@")) return "Invalid email";
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // PASSWORD
+                  TextFormField(
+                    controller: passwordController,
+                    obscureText: obscurePass,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.lock),
+                      labelText: "Password",
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                            obscurePass ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () {
+                          setState(() => obscurePass = !obscurePass);
+                        },
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value!.isEmpty) return "Password required";
+                      if (value.length < 6) return "Minimum 6 characters";
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // SIGN UP BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : createAccount,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                      child: isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              "Create Account",
+                              style: TextStyle(fontSize: 18),
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // BACK TO LOGIN
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Already have an account? "),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const LoginScreen()),
+                          );
+                        },
+                        child: const Text(
+                          "Login",
+                          style: TextStyle(
+                            color: Colors.deepPurple,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    ],
+                  )
+                ],
               ),
-            ),
+            )
           ],
         ),
       ),
