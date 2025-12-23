@@ -1,19 +1,17 @@
-// lib/screens/quiz_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/quiz.dart';
 import '../services/dummy_data.dart';
 import '../widgets/progress_bar.dart';
-import 'result_screen.dart';
 
 class QuizScreen extends StatefulWidget {
   final String lessonId;
-  final String subjectId;
+  final String subjectId; // Make sure you're passing this
 
   const QuizScreen({
     super.key, 
     required this.lessonId, 
-    required this.subjectId,
+    required this.subjectId, // Add this parameter
   });
 
   @override
@@ -41,16 +39,22 @@ class _QuizScreenState extends State<QuizScreen>
   void initState() {
     super.initState();
 
-    // Get quizzes by subjectId
+    // FIX: Use the correct method to get quizzes
+    // Option 1: Use getQuizzesByLesson (if it's working)
+    //quizzes = DummyData.getQuizzesByLesson(widget.lessonId);
+    
+    // Option 2: OR get quizzes by subjectId directly
     quizzes = DummyData.quizzes[widget.subjectId] ?? [];
     
-    // Debug print
+    // Debug print to check if quizzes are loaded
     print("Quizzes loaded: ${quizzes.length}");
+    print("Lesson ID: ${widget.lessonId}");
     print("Subject ID: ${widget.subjectId}");
 
-    // Check if quizzes are empty
+    // Check if quizzes are empty before proceeding
     if (quizzes.isEmpty) {
-      print("ERROR: No quizzes found for ${widget.subjectId}");
+      print("ERROR: No quizzes found for ${widget.lessonId}");
+      // You might want to show an error message or navigate back
     }
 
     controller = AnimationController(
@@ -66,78 +70,15 @@ class _QuizScreenState extends State<QuizScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
 
-    startTimer();
+    //startTimer();
     controller.forward();
   }
 
-  void startTimer() {
-    timeLeft = 15;
-    timeUp = false;
-
-    countdownTimer?.cancel();
-    countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (timeLeft == 0) {
-        setState(() => timeUp = true);
-        countdownTimer?.cancel();
-        Future.delayed(const Duration(milliseconds: 800), nextQuestion);
-      } else {
-        setState(() => timeLeft--);
-      }
-    });
-  }
-
-  void restartAnimations() {
-    controller.reset();
-    controller.forward();
-  }
-
-  void checkAnswer(int selectedIndex) {
-    if (timeUp) return;
-
-    bool correct = quizzes[currentIndex].correctIndex == selectedIndex;
-
-    if (correct) score++;
-
-    setState(() {
-      timeUp = true;
-      timeLeft = 0;
-    });
-
-    countdownTimer?.cancel();
-
-    Future.delayed(const Duration(milliseconds: 800), nextQuestion);
-  }
-
-  void nextQuestion() {
-    if (currentIndex < quizzes.length - 1) {
-      setState(() {
-        currentIndex++;
-      });
-      restartAnimations();
-      startTimer();
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ResultScreen(
-            score: score,
-            total: quizzes.length,
-          ),
-        ),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    countdownTimer?.cancel();
-    controller.dispose();
-    super.dispose();
-  }
+  // ... rest of your code ...
 
   @override
   Widget build(BuildContext context) {
-    // Check if quizzes is empty
+    // CHECK if quizzes is empty before accessing it
     if (quizzes.isEmpty) {
       return Scaffold(
         appBar: AppBar(
@@ -151,23 +92,23 @@ class _QuizScreenState extends State<QuizScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline,
                   size: 60,
                   color: Colors.red,
                 ),
-                const SizedBox(height: 20),
-                const Text(
+                SizedBox(height: 20),
+                Text(
                   "No quizzes available for this subject.",
                   style: TextStyle(fontSize: 18),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: const Text("Go Back"),
+                  child: Text("Go Back"),
                 ),
               ],
             ),
@@ -176,7 +117,7 @@ class _QuizScreenState extends State<QuizScreen>
       );
     }
 
-    Quiz currentQuiz = quizzes[currentIndex];
+    // Only access currentQuiz if quizzes is not empty
 
     return Scaffold(
       appBar: AppBar(
@@ -194,88 +135,8 @@ class _QuizScreenState extends State<QuizScreen>
               currentIndex: currentIndex,
               totalQuestions: quizzes.length,
             ),
-
-            const SizedBox(height: 20),
-
-            // TIMER WITH PULSE EFFECT
-            AnimatedScale(
-              scale: timeLeft <= 5 ? 1.1 : 1.0,
-              duration: const Duration(milliseconds: 300),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: timeUp
-                      ? Colors.red
-                      : timeLeft <= 5
-                          ? Colors.orange
-                          : Colors.green,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  timeUp ? "⏳ Time's Up!" : "⏱ Time Left: $timeLeft sec",
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
             
-
-            const SizedBox(height: 30),
-
-            // QUESTION - FADE IN
-            FadeTransition(
-              opacity: fadeAnimation,
-              child: Text(
-                "Q${currentIndex + 1}. ${currentQuiz.question}",
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // OPTIONS - SLIDE UP ANIMATION
-            FadeTransition(
-              opacity: fadeAnimation,
-              child: SlideTransition(
-                position: slideAnimation,
-                child: Column(
-                  children: List.generate(
-                    currentQuiz.options.length,
-                    (index) => GestureDetector(
-                      onTap: () => checkAnswer(index),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(15),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.deepPurple),
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: const [
-                            BoxShadow(
-                              offset: Offset(0, 2),
-                              blurRadius: 3,
-                              color: Colors.black12,
-                            )
-                          ],
-                        ),
-                        child: Text(
-                          currentQuiz.options[index],
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            // ... rest of your quiz UI code ...
           ],
         ),
       ),

@@ -1,9 +1,6 @@
-// lib/screens/login_screen.dart - Updated with API
 import 'package:flutter/material.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
-import '../services/api_service.dart';
 import 'signup_screen.dart';
-import 'main_navigation.dart';
+import 'home_screen.dart'; // Create this later
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,56 +16,28 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool isLoading = false;
   bool obscurePassword = true;
-  String errorMessage = '';
 
-  void loginUser() async {
+  void loginUser() {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      isLoading = true;
-      errorMessage = '';
-    });
+    setState(() => isLoading = true);
 
-    final email = emailController.text.trim();
-    final password = passwordController.text.trim();
+    // Simulating login — later connect to VPS API
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() => isLoading = false);
 
-    final response = await ApiService.login(email, password);
-
-    setState(() => isLoading = false);
-
-    if (response.success && response.data != null) {
-      // Success - navigate to main app
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const MainNavigation()),
+        MaterialPageRoute(builder: (_) => const HomePage()),
       );
-    } else {
-      // Show error
-      setState(() {
-        errorMessage = response.message;
-      });
-      
-      // Show error dialog
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Login Failed'),
-          content: Text(response.message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -91,30 +60,6 @@ class _LoginScreenState extends State<LoginScreen> {
               style: TextStyle(fontSize: 16),
             ),
 
-            // ERROR MESSAGE
-            if (errorMessage.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(top: 20),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.red),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        errorMessage,
-                        style: TextStyle(color: Colors.red.shade800),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
             const SizedBox(height: 40),
 
             // LOGIN FORM
@@ -122,10 +67,10 @@ class _LoginScreenState extends State<LoginScreen> {
               key: _formKey,
               child: Column(
                 children: [
+                  
                   // EMAIL FIELD
                   TextFormField(
                     controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.email),
                       labelText: "Email",
@@ -186,10 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
                       child: isLoading
-                          ? const SpinKitThreeBounce(
-                              color: Colors.white,
-                              size: 20,
-                            )
+                          ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               "Login",
                               style: TextStyle(fontSize: 18),
