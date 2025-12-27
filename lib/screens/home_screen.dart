@@ -1,8 +1,12 @@
+// lib/screens/home_screen.dart
+
 import 'package:flutter/material.dart';
 import '../services/dummy_data.dart';
 import '../widgets/lesson_card.dart';
 import 'lesson_screen.dart';
 import 'quiz_screen.dart';
+import 'profile_screen.dart';      // Added Import
+import 'sentiment_screen.dart';    // Added Import
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,6 +20,9 @@ class _HomePageState extends State<HomePage> {
 
   List<Map<String, dynamic>> subjects = DummyData.subjects;
   List<Map<String, dynamic>> filteredSubjects = [];
+  
+  // 1. TRACK THE CURRENT TAB
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -23,7 +30,6 @@ class _HomePageState extends State<HomePage> {
     filteredSubjects = subjects;
   }
 
-  // SEARCH FILTER
   void filterSubjects(String query) {
     setState(() {
       filteredSubjects = subjects
@@ -31,6 +37,27 @@ class _HomePageState extends State<HomePage> {
               subject["name"].toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
+  }
+
+  // 2. NAVIGATION LOGIC FOR THE BAR
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    if (index == 1) {
+      // Navigate to Feedback (Sentiment Screen)
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SentimentScreen()),
+      ).then((_) => setState(() => _selectedIndex = 0)); // Reset to home icon on return
+    } else if (index == 2) {
+      // Navigate to Profile
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      ).then((_) => setState(() => _selectedIndex = 0)); // Reset to home icon on return
+    }
   }
 
   @override
@@ -50,42 +77,25 @@ class _HomePageState extends State<HomePage> {
               controller: _searchController,
               onChanged: filterSubjects,
               decoration: InputDecoration(
-                hintText: "Search for a subject...",
+                hintText: "Search subjects...",
                 prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
                 ),
               ),
             ),
-
-            const SizedBox(height: 15),
-
-            // SUBJECT LIST TITLE
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Available Subjects",
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
 
             // SUBJECT GRID
             Expanded(
               child: GridView.builder(
-                itemCount: filteredSubjects.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  childAspectRatio: 1.3,
+                  childAspectRatio: 0.75,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
+                itemCount: filteredSubjects.length,
                 itemBuilder: (context, index) {
                   var subject = filteredSubjects[index];
 
@@ -102,26 +112,46 @@ class _HomePageState extends State<HomePage> {
                       );
                     },
                     onTapQuiz: () {
-                      // FIX: Create a lesson ID based on subject ID
-                      // For example: "math" -> "math1", "physics" -> "physics1"
                       String lessonId = "${subject["id"]}1";
-                      
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => QuizScreen(
                             subjectId: subject["id"],
-                            lessonId: lessonId, // Use the generated lesson ID
+                            lessonId: lessonId,
                           ),
                         ),
                       );
                     },
-                    );
+                  );
                 },
               ),
             ),
           ],
         ),
+      ),
+      
+      // 3. ADD THE BOTTOM NAVIGATION BAR HERE
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: Colors.deepPurple,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed, // Keeps labels visible
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            label: 'Feedback',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }

@@ -77,7 +77,7 @@ class LessonCard extends StatelessWidget {
                     ),
                     child: const Text(
                       "Lesson",
-                      style: TextStyle(fontSize: 12), // Reduced
+                      style: TextStyle(fontSize: 18), // Reduced
                     ),
                   ),
                 ),
