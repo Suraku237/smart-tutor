@@ -142,28 +142,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 20),
 
                   // NAVIGATE TO SIGN UP
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Don't have an account? "),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const SignUpScreen()),
-                          );
-                        },
-                        child: const Text(
-                          "Create Account",
-                          style: TextStyle(
-                            color: Colors.deepPurple,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      )
-                    ],
-                  )
+                  // lib/screens/login_screen.dart -> Line 145
+Wrap(
+  alignment: WrapAlignment.center,
+  children: [
+    const Text("Don't have an account? "),
+    GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SignUpScreen()),
+        );
+      },
+      child: const Text(
+        "Create Account",
+        style: TextStyle(
+          color: Colors.deepPurple,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+  ],
+)
                 ],
               ),
             )

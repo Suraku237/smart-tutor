@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // 1. Add this
+import '../theme_provider.dart';        // 2. Add your provider file path
 import 'sentiment_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -6,6 +8,9 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 3. Listen to the ThemeProvider
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Profile"),
@@ -13,7 +18,7 @@ class ProfileScreen extends StatelessWidget {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20), // Increased screen padding
+        padding: const EdgeInsets.all(20), 
         child: Column(
           children: [
             // PROFILE HEADER
@@ -26,11 +31,12 @@ class ProfileScreen extends StatelessWidget {
             const Text("John Doe", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 30),
 
-            // THE SETTINGS BOX (Increased Size)
+            // THE SETTINGS BOX
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20), // More rounded corners
+                // 4. Box color adapts to Dark/Light mode
+                color: themeProvider.isDarkMode ? Colors.grey[900] : Colors.white,
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.08),
@@ -41,11 +47,18 @@ class ProfileScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
+                  // --- FUNCTIONAL THEME SWITCH ---
                   _buildSettingsTile(
-                    icon: Icons.wb_sunny_outlined,
+                    icon: themeProvider.isDarkMode ? Icons.dark_mode : Icons.wb_sunny_outlined,
                     color: Colors.orange,
-                    title: "Light Mode",
-                    trailing: Switch(value: true, onChanged: (v) {}, activeColor: Colors.deepPurple),
+                    title: themeProvider.isDarkMode ? "Dark Mode" : "Light Mode",
+                    trailing: Switch(
+                      value: themeProvider.isDarkMode, 
+                      onChanged: (value) {
+                        themeProvider.toggleTheme(value); // 5. Toggle logic
+                      }, 
+                      activeColor: Colors.deepPurple,
+                    ),
                   ),
                   const Divider(height: 1, indent: 20, endIndent: 20),
                   _buildSettingsTile(
@@ -90,7 +103,7 @@ class ProfileScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 18), // Thicker button
+                  padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -102,7 +115,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // UPDATED HELPER FOR A LARGER BOX EFFECT
   Widget _buildSettingsTile({
     required IconData icon,
     required Color color,
@@ -112,7 +124,6 @@ class ProfileScreen extends StatelessWidget {
   }) {
     return ListTile(
       onTap: onTap,
-      // INCREASED CONTENT PADDING makes the box taller
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8), 
       leading: Container(
         padding: const EdgeInsets.all(8),

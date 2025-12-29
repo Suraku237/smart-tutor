@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // Add this
+import 'theme_provider.dart';           // Add this
 import 'screens/splash_screen.dart';
 
-
 void main() {
-  runApp(const SmartTutorApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ThemeProvider(),
+      child: const SmartTutorApp(),
+    ),
+  );
 }
 
 class SmartTutorApp extends StatelessWidget {
@@ -11,20 +17,35 @@ class SmartTutorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to the theme state
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return MaterialApp(
       title: 'Smart Tutor',
       debugShowCheckedModeBanner: false,
-
-      // App Theme (You can change colors later)
+      
+      // Theme logic
+      themeMode: themeProvider.themeMode,
+      
+      // Light Mode Settings
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        brightness: Brightness.light,
+        primarySwatch: Colors.deepPurple,
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Roboto',
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)
+        useMaterial3: true,
       ),
 
-      // First screen to load
-      home: SplashScreen(),
+      // Dark Mode Settings
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.deepPurple,
+        scaffoldBackgroundColor: const Color(0xFF121212), // Deep Black
+        fontFamily: 'Roboto',
+        useMaterial3: true,
+      ),
+
+      home: const SplashScreen(),
     );
   }
 }

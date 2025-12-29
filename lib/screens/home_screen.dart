@@ -1,12 +1,13 @@
 // lib/screens/home_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; 
 import '../services/dummy_data.dart';
-import '../widgets/lesson_card.dart';
+import '../theme_provider.dart';
 import 'lesson_screen.dart';
 import 'quiz_screen.dart';
-import 'profile_screen.dart';      // Added Import
-import 'sentiment_screen.dart';    // Added Import
+import 'profile_screen.dart';
+import 'sentiment_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,8 +21,6 @@ class _HomePageState extends State<HomePage> {
 
   List<Map<String, dynamic>> subjects = DummyData.subjects;
   List<Map<String, dynamic>> filteredSubjects = [];
-  
-  // 1. TRACK THE CURRENT TAB
   int _selectedIndex = 0;
 
   @override
@@ -39,119 +38,176 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // 2. NAVIGATION LOGIC FOR THE BAR
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
 
     if (index == 1) {
-      // Navigate to Feedback (Sentiment Screen)
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const SentimentScreen()),
-      ).then((_) => setState(() => _selectedIndex = 0)); // Reset to home icon on return
+      ).then((_) => setState(() => _selectedIndex = 0)); 
     } else if (index == 2) {
-      // Navigate to Profile
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const ProfileScreen()),
-      ).then((_) => setState(() => _selectedIndex = 0)); // Reset to home icon on return
+      ).then((_) => setState(() => _selectedIndex = 0)); 
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
+      backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.grey[100],
       appBar: AppBar(
-        title: const Text("Smart Tutor"),
+        title: const Text("Smart Tutor", style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
         backgroundColor: Colors.deepPurple,
-        elevation: 3,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(15.0),
-        child: Column(
-          children: [
-            // SEARCH BAR
-            TextField(
-              controller: _searchController,
-              onChanged: filterSubjects,
-              decoration: InputDecoration(
-                hintText: "Search subjects...",
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+      body: Column(
+        children: [
+          // --- HEADER SECTION ---
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 25),
+            decoration: const BoxDecoration(
+              color: Colors.deepPurple,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
               ),
             ),
-            const SizedBox(height: 20),
-
-            // SUBJECT GRID
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.75,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Hello, Learner!",
+                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                itemCount: filteredSubjects.length,
-                itemBuilder: (context, index) {
-                  var subject = filteredSubjects[index];
-
-                  return LessonCard(
-                    emoji: subject["icon"],
-                    title: subject["name"],
-                    onTapLesson: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              LessonScreen(subjectId: subject["id"]),
-                        ),
-                      );
-                    },
-                    onTapQuiz: () {
-                      String lessonId = "${subject["id"]}1";
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => QuizScreen(
-                            subjectId: subject["id"],
-                            lessonId: lessonId,
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+                const Text(
+                  "What subject are we mastering today?",
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                const SizedBox(height: 20),
+                // SEARCH BAR
+                Container(
+                  decoration: BoxDecoration(
+                    color: themeProvider.isDarkMode ? Colors.grey[900] : Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: filterSubjects,
+                    decoration: const InputDecoration(
+                      hintText: "Search subjects...",
+                      prefixIcon: Icon(Icons.search, color: Colors.deepPurple),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(vertical: 15),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          // --- SUBJECT LIST SECTION (RESEMBLING RECENT PAPERS) ---
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(20),
+              itemCount: filteredSubjects.length,
+              itemBuilder: (context, index) {
+                var subject = filteredSubjects[index];
+                return _buildSubjectPaperTile(subject, themeProvider);
+              },
+            ),
+          ),
+        ],
       ),
       
-      // 3. ADD THE BOTTOM NAVIGATION BAR HERE
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.white,
         selectedItemColor: Colors.deepPurple,
         unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed, // Keeps labels visible
+        type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: 'Feedback',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_rounded), label: 'Feedback'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
         ],
+      ),
+    );
+  }
+
+  // --- WIDGET: SUBJECT PAPER TILE (MATCHES LESSON SCREEN STYLE) ---
+  Widget _buildSubjectPaperTile(Map<String, dynamic> subject, ThemeProvider theme) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: theme.isDarkMode ? Colors.grey[900] : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => LessonScreen(subjectId: subject["id"])),
+          );
+        },
+        leading: Container(
+          width: 55,
+          height: 55,
+          decoration: BoxDecoration(
+            color: Colors.deepPurple.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              subject["icon"] ?? "📚", 
+              style: const TextStyle(fontSize: 28),
+            ),
+          ),
+        ),
+        title: Text(
+          subject["name"],
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        subtitle: Row(
+          children: [
+            _buildStatusChip("Core Subject", Colors.green),
+            const SizedBox(width: 8),
+            _buildStatusChip("Active", Colors.blue),
+          ],
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.deepPurple),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
       ),
     );
   }

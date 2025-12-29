@@ -12,11 +12,6 @@ class DummyData {
       "icon": "📘",
     },
     {
-      "id": "science",
-      "name": "Science",
-      "icon": "🧪",
-    },
-    {
       "id": "english",
       "name": "English",
       "icon": "📚",
@@ -52,11 +47,6 @@ class DummyData {
       "icon": "🌍",
     },
     {
-      "id": "art",
-      "name": "Art",
-      "icon": "🎨",
-    },
-    {
       "id": "music",
       "name": "Music",
       "icon": "🎵",
@@ -85,23 +75,6 @@ class DummyData {
         content: "Geometry deals with the study of shapes, lines, angles...",
       ),
     ],
-
-    "science": [
-      Lesson(
-        id: "sci1",
-        title: "What is Force?",
-        description: "Learn about push, pull, and how objects move.",
-        content:
-            "Force is a push or pull that changes the motion of an object...",
-      ),
-      Lesson(
-        id: "sci2",
-        title: "Human Digestive System",
-        description: "How food moves through the human body.",
-        content: "The digestive system breaks down food into nutrients...",
-      ),
-    ],
-
     "english": [
       Lesson(
         id: "eng1",
@@ -206,22 +179,6 @@ class DummyData {
         content: "Climate zones are regions with similar weather patterns...",
       ),
     ],
-
-    "art": [
-      Lesson(
-        id: "art1",
-        title: "Color Theory",
-        description: "Understanding primary, secondary, and complementary colors.",
-        content: "Color theory explains how colors interact with each other...",
-      ),
-      Lesson(
-        id: "art2",
-        title: "Perspective Drawing",
-        description: "Learn to create depth in your drawings.",
-        content: "Perspective drawing creates the illusion of depth...",
-      ),
-    ],
-
     "music": [
       Lesson(
         id: "mus1",
