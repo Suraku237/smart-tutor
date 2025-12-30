@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'lesson_screen.dart'; // Ensure this path is correct
 
 class LessonPage extends StatelessWidget {
   final String subjectId; 
@@ -15,20 +14,16 @@ class LessonPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: const Text("Study Options"),
         backgroundColor: Colors.deepPurple,
         elevation: 0,
-        // Manual back button for clarity
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
       body: Column(
         children: [
+          // Header Section
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(30),
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
             decoration: const BoxDecoration(
               color: Colors.deepPurple,
               borderRadius: BorderRadius.only(
@@ -39,56 +34,60 @@ class LessonPage extends StatelessWidget {
             child: Column(
               children: [
                 const CircleAvatar(
-                  radius: 50,
+                  radius: 45,
                   backgroundColor: Colors.white24,
-                  child: Icon(Icons.menu_book, size: 50, color: Colors.white),
+                  child: Icon(Icons.menu_book, size: 45, color: Colors.white),
                 ),
                 const SizedBox(height: 15),
                 Text(
-                  title.toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white, 
+                    fontSize: 22, 
+                    fontWeight: FontWeight.bold
+                  ),
                 ),
               ],
             ),
           ),
 
-          const Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Text(
-              "Select an option below to begin your study session. All materials are updated weekly from our online database.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          ),
-
           const Spacer(),
 
+          // --- ACTION BUTTONS SECTION ---
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 40),
             child: Column(
               children: [
+                // 1. VIEW PDF (Primary Action)
                 _buildMenuButton(
                   context, 
-                  "READ PDF NOTES", 
+                  "VIEW PDF NOTES", 
                   Icons.picture_as_pdf, 
-                  () {
-                    Navigator.push(
-                      context, 
-                      MaterialPageRoute(builder: (context) => LessonScreen(subjectId: subjectId))
-                    );
-                  }
+                  Colors.deepPurple,
+                  () { /* PDF View Logic */ }
                 ),
-                const SizedBox(height: 15),
+                
+                const SizedBox(height: 16),
+
+                // 2. DOWNLOAD (Secondary Action)
+                _buildMenuButton(
+                  context, 
+                  "DOWNLOAD PDF", 
+                  Icons.download, 
+                  Colors.blueGrey,
+                  () { /* Download Logic */ }
+                ),
+
+                const SizedBox(height: 16),
+
+                // 3. PRACTICE QUIZ (Gamified Action)
                 _buildMenuButton(
                   context, 
                   "PRACTICE QUIZ", 
                   Icons.quiz, 
-                  () {
-                    // This will be linked to your Quiz logic
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Quiz mode starting..."))
-                    );
-                  }
+                  Colors.orange.shade800,
+                  () { /* Quiz Logic */ }
                 ),
               ],
             ),
@@ -98,18 +97,36 @@ class LessonPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuButton(BuildContext context, String label, IconData icon, VoidCallback onTap) {
+  // Helper with specific size constraints
+  Widget _buildMenuButton(
+    BuildContext context, 
+    String label, 
+    IconData icon, 
+    Color color, 
+    VoidCallback onTap
+  ) {
     return SizedBox(
-      width: double.infinity,
+      width: double.infinity, // Makes button span the width of the padding
+      height: 60,            // Fixed height for consistency
       child: ElevatedButton.icon(
         onPressed: onTap,
-        icon: Icon(icon),
-        label: Text(label),
+        icon: Icon(icon, size: 24),
+        label: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16, 
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: color,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          elevation: 3,
+          shadowColor: Colors.black45,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
       ),
     );
