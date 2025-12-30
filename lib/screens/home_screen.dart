@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; 
 import '../services/dummy_data.dart';
 import '../theme_provider.dart';
-import 'lesson_screen.dart';
-import 'quiz_screen.dart';
+import 'lesson_screen.dart'; // We are going here first
 import 'profile_screen.dart';
 import 'sentiment_screen.dart';
 
@@ -39,9 +38,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
 
     if (index == 1) {
       Navigator.push(
@@ -71,7 +68,7 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
-          // --- HEADER SECTION ---
+          // HEADER
           Container(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 25),
             decoration: const BoxDecoration(
@@ -89,16 +86,15 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const Text(
-                  "What subject are we mastering today?",
+                  "Select a subject to view available materials",
                   style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 const SizedBox(height: 20),
-                // SEARCH BAR
                 Container(
                   decoration: BoxDecoration(
                     color: themeProvider.isDarkMode ? Colors.grey[900] : Colors.white,
                     borderRadius: BorderRadius.circular(15),
-                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
                   ),
                   child: TextField(
                     controller: _searchController,
@@ -115,7 +111,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // --- SUBJECT LIST SECTION (RESEMBLING RECENT PAPERS) ---
+          // SUBJECT LIST
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(20),
@@ -128,7 +124,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -145,7 +140,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- WIDGET: SUBJECT PAPER TILE (MATCHES LESSON SCREEN STYLE) ---
   Widget _buildSubjectPaperTile(Map<String, dynamic> subject, ThemeProvider theme) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -162,10 +156,15 @@ class _HomePageState extends State<HomePage> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
+        // --- NAVIGATION CHANGE HERE ---
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => LessonScreen(subjectId: subject["id"])),
+            MaterialPageRoute(
+              builder: (_) => LessonScreen(
+                subjectId: subject["id"], // Go to LessonScreen first
+              ),
+            ),
           );
         },
         leading: Container(
@@ -186,28 +185,8 @@ class _HomePageState extends State<HomePage> {
           subject["name"],
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
-        subtitle: Row(
-          children: [
-            _buildStatusChip("Core Subject", Colors.green),
-            const SizedBox(width: 8),
-            _buildStatusChip("Active", Colors.blue),
-          ],
-        ),
+        subtitle: const Text("View all papers & notes", style: TextStyle(fontSize: 12)),
         trailing: const Icon(Icons.chevron_right, color: Colors.deepPurple),
-      ),
-    );
-  }
-
-  Widget _buildStatusChip(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
       ),
     );
   }
