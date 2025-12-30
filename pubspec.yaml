@@ -17,11 +17,12 @@ dependencies:
   pdf: ^3.11.3
   printing: ^5.14.2
   url_launcher: ^6.3.1  
-
+  http: ^1.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  
 
 flutter:
   uses-material-design: true
