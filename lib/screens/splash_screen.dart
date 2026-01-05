@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
+import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final bool isLoggedIn; 
+  const SplashScreen({super.key, required this.isLoggedIn});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -18,10 +20,10 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // 1. Initialize animations to match the premium "Smart" feel
+    // 1. Setup Animations
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 1500),
     );
 
     _logoScale = Tween<double>(begin: 0.5, end: 1.0).animate(
@@ -31,20 +33,19 @@ class _SplashScreenState extends State<SplashScreen>
         .animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _controller.forward();
-Future.delayed(const Duration(seconds: 3), () {
-  if (mounted) {
-    Navigator.pushReplacement(
-      context,
-      PageRouteBuilder( // Removed 'const'
-        pageBuilder: (context, animation, secondaryAnimation) =>const LoginScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 800),
-      ),
-    );
-  }
-});
+
+    // 2. STABLE NAVIGATION LOGIC
+    // We use a standard MaterialPageRoute to prevent Windows GPU hangs
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => 
+                widget.isLoggedIn ? const HomePage() : const LoginScreen(),
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -55,14 +56,14 @@ Future.delayed(const Duration(seconds: 3), () {
 
   @override
   Widget build(BuildContext context) {
+    // The Scaffold ensures the background isn't white/blank
     return Scaffold(
-      // Using the same Deep Purple from your LessonScreen AppBar
       backgroundColor: Colors.deepPurple,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // LOGO: Matches the school icon from your Lesson Tiles
+            // LOGO SECTION
             ScaleTransition(
               scale: _logoScale,
               child: Container(
@@ -85,36 +86,33 @@ Future.delayed(const Duration(seconds: 3), () {
                 ),
               ),
             ),
-
             const SizedBox(height: 30),
 
-            // APP NAME
+            // TEXT SECTION
             FadeTransition(
               opacity: _fadeText,
-              child: const Text(
-                "SMART TUTOR",
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 2.0,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // TAGLINE: No 'const' here to avoid Windows build errors with withOpacity
-            FadeTransition(
-              opacity: _fadeText,
-              child: Text(
-                "AI-Powered Learning Excellence",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w300,
-                  color: Colors.white.withOpacity(0.8),
-                  letterSpacing: 1.2,
-                ),
+              child: Column(
+                children: [
+                  const Text(
+                    "SMART TUTOR",
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "AI-Powered Learning Excellence",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w300,
+                      color: Colors.white.withOpacity(0.8),
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

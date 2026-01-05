@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'signup_screen.dart';
-import 'home_screen.dart'; // Create this later
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,165 +15,173 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-
   final _formKey = GlobalKey<FormState>();
+  
   bool isLoading = false;
   bool obscurePassword = true;
 
-  void loginUser() {
+  // Function to handle API Login
+  Future<void> loginUser() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => isLoading = true);
 
-    // Simulating login — later connect to VPS API
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() => isLoading = false);
+    try {
+      // UPDATED: Using your local Ethernet IP and port 8001
+      // This matches the configuration we set for the SignUp screen
+      const String baseUrl = "http://192.168.2.24:8001"; 
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
-    });
+      final url = Uri.parse("$baseUrl/login");
+
+      // Make the POST request
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({
+          "email": emailController.text.trim(),
+          "password": passwordController.text.trim(),
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      final data = json.decode(response.body);
+
+      // Handle the Response
+      if (response.statusCode == 200 && data['success'] == true) {
+        // Save login session locally using SharedPreferences
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('userName', data['user']?['fullname'] ?? "User");
+        await prefs.setString('userEmail', data['user']?['email'] ?? "");
+
+        if (mounted) {
+          _showSnackBar("Login Successful! Welcome", Colors.green);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomePage()),
+          );
+        }
+      } else {
+        _showSnackBar(data['message'] ?? "Invalid email or password", Colors.red);
+      }
+    } catch (e) {
+      _showSnackBar("Connection error: Check your Wi-Fi and API status", Colors.orange);
+      debugPrint("Login Error: $e");
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const SizedBox(height: 60),
-
-            // HEADING
-            const Text(
-              "Welcome Back 👋",
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Hero(
+                tag: 'logo',
+                child: Icon(Icons.school, size: 80, color: Colors.deepPurple),
               ),
-            ),
-
-            const SizedBox(height: 10),
-
-            const Text(
-              "Login to continue learning",
-              style: TextStyle(fontSize: 16),
-            ),
-
-            const SizedBox(height: 40),
-
-            // LOGIN FORM
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  
-                  // EMAIL FIELD
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.email),
-                      labelText: "Email",
-                      border: OutlineInputBorder(),
+              const SizedBox(height: 20),
+              const Text(
+                "Welcome Back 👋",
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              ),
+              const Text("Login to continue learning"),
+              const SizedBox(height: 40),
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.email),
+                        labelText: "Email",
+                        border: OutlineInputBorder(),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                      validator: (value) => (value == null || !value.contains("@")) 
+                          ? "Enter a valid email" : null,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Email is required";
-                      }
-                      if (!value.contains("@")) {
-                        return "Enter a valid email";
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // PASSWORD FIELD
-                  TextFormField(
-                    controller: passwordController,
-                    obscureText: obscurePassword,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.lock),
-                      labelText: "Password",
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          obscurePassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: passwordController,
+                      obscureText: obscurePassword,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.lock),
+                        labelText: "Password",
+                        border: const OutlineInputBorder(),
+                        filled: true,
+                        fillColor: Colors.white,
+                        suffixIcon: IconButton(
+                          icon: Icon(obscurePassword ? Icons.visibility : Icons.visibility_off),
+                          onPressed: () => setState(() => obscurePassword = !obscurePassword),
                         ),
-                        onPressed: () {
-                          setState(() => obscurePassword = !obscurePassword);
-                        },
+                      ),
+                      validator: (value) => (value == null || value.length < 6) 
+                          ? "Password must be at least 6 characters" : null,
+                    ),
+                    const SizedBox(height: 30),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : loginUser,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20, 
+                                width: 20, 
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                              )
+                            : const Text("Login", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Password is required";
-                      }
-                      if (value.length < 6) {
-                        return "Password must be at least 6 characters";
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  // LOGIN BUTTON
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: isLoading ? null : loginUser,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                      ),
-                      child: isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              "Login",
-                              style: TextStyle(fontSize: 18, color: Colors.white ),
-                            ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // NAVIGATE TO SIGN UP
-                  // lib/screens/login_screen.dart -> Line 145
-Wrap(
-  alignment: WrapAlignment.center,
-  children: [
-    const Text("Don't have an account? "),
-    GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SignUpScreen()),
-        );
-      },
-      child: const Text(
-        "Create Account",
-        style: TextStyle(
-          color: Colors.deepPurple,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ),
-  ],
-)
-                ],
-              ),
-            )
-          ],
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text("Don't have an account? "),
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context, 
+                            MaterialPageRoute(builder: (_) => const SignUpScreen())
+                          ),
+                          child: const Text(
+                            "Create Account",
+                            style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold),
+                          ),
+                        )
+                      ],
+                    )
+                  ],
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
   }
 }
-

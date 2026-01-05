@@ -16,16 +16,20 @@ dependencies:
   flutter_markdown: ^0.7.7+1
   pdf: ^3.11.3
   printing: ^5.14.2
-  url_launcher: ^6.3.1  
-  http: ^1.1.0
+  url_launcher: ^6.3.1
+  shared_preferences: ^2.3.5
+  
+  # --- ADDED FOR PDF VIEWING AND DOWNLOADING ---
+  flutter_pdfview: ^1.3.2      # The engine to display the PDF
+  path_provider: ^2.1.2        # To find the phone's internal storage
+  dio: ^5.4.1                  # High-performance downloader for large files
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  
 
 flutter:
   uses-material-design: true
-  # If you have assets (images/pdfs), they go below here:
   # assets:
   #   - assets/notes_database.json

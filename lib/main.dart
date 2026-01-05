@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Add this
-import 'theme_provider.dart';           // Add this
+import 'package:provider/provider.dart';
+import 'theme_provider.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
+  // We move everything inside the App to prevent startup hanging
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),
@@ -17,35 +19,13 @@ class SmartTutorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Listen to the theme state
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
     return MaterialApp(
       title: 'Smart Tutor',
       debugShowCheckedModeBanner: false,
-      
-      // Theme logic
-      themeMode: themeProvider.themeMode,
-      
-      // Light Mode Settings
-      theme: ThemeData(
-        brightness: Brightness.light,
-        primarySwatch: Colors.deepPurple,
-        scaffoldBackgroundColor: Colors.white,
-        fontFamily: 'Roboto',
-        useMaterial3: true,
-      ),
-
-      // Dark Mode Settings
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.deepPurple,
-        scaffoldBackgroundColor: const Color(0xFF121212), // Deep Black
-        fontFamily: 'Roboto',
-        useMaterial3: true,
-      ),
-
-      home: const SplashScreen(),
+      // Defaulting to light for testing stability
+      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.deepPurple),
+      // We pass 'false' manually just to see if the screen loads
+      home: const SplashScreen(isLoggedIn: false),
     );
   }
 }
