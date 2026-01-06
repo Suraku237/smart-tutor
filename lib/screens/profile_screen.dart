@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Add this
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme_provider.dart';
 import 'sentiment_screen.dart';
 import 'login_screen.dart';
@@ -22,7 +22,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserData();
   }
 
-  // Load the data we saved during Login
   Future<void> _loadUserData() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -33,7 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _handleLogout() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Clear session data
+    await prefs.clear();
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
@@ -46,13 +45,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final bool isDark = themeProvider.isDarkMode; // Convenience variable
 
     return Scaffold(
-      // Background color adapts to light/dark mode
-      backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.grey.shade100,
+      backgroundColor: isDark ? Colors.black : Colors.grey.shade100,
       appBar: AppBar(
         title: const Text("Profile", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: isDark ? Colors.grey[900] : Colors.deepPurple,
         foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
@@ -61,58 +60,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // --- DYNAMIC PROFILE HEADER ---
             CircleAvatar(
               radius: 55,
-              backgroundColor: Colors.deepPurple.shade100,
-              child: const Icon(Icons.person, size: 70, color: Colors.deepPurple),
+              backgroundColor: isDark ? Colors.deepPurple.withOpacity(0.2) : Colors.deepPurple.shade100,
+              child: Icon(Icons.person, size: 70, color: isDark ? Colors.deepPurpleAccent : Colors.deepPurple),
             ),
             const SizedBox(height: 16),
+            
+            // --- UPDATED NAME TEXT ---
             Text(
-              fullName, // Dynamic Name
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              fullName,
+              style: TextStyle(
+                fontSize: 24, 
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black, // Logic added here
+              ),
             ),
+            
+            // --- UPDATED EMAIL TEXT ---
             Text(
-              email, // Dynamic Email
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              email,
+              style: TextStyle(
+                fontSize: 16, 
+                color: isDark ? Colors.white70 : Colors.grey.shade600, // Logic added here
+              ),
             ),
             const SizedBox(height: 30),
 
-            // --- THE SETTINGS BOX ---
             Container(
               decoration: BoxDecoration(
-                color: themeProvider.isDarkMode ? Colors.grey[900] : Colors.white,
+                color: isDark ? Colors.grey[900] : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  )
+                  if (!isDark) // Only show shadow in light mode for a cleaner look
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    )
                 ],
               ),
               child: Column(
                 children: [
                   _buildSettingsTile(
-                    icon: themeProvider.isDarkMode ? Icons.dark_mode : Icons.wb_sunny_outlined,
+                    isDark: isDark,
+                    icon: isDark ? Icons.dark_mode : Icons.wb_sunny_outlined,
                     color: Colors.orange,
-                    title: themeProvider.isDarkMode ? "Dark Mode" : "Light Mode",
+                    title: isDark ? "Dark Mode" : "Light Mode",
                     trailing: Switch(
-                      value: themeProvider.isDarkMode,
+                      value: isDark,
                       onChanged: (value) {
                         themeProvider.toggleTheme(value);
                       },
-                      activeColor: Colors.deepPurple,
+                      activeColor: Colors.deepPurpleAccent,
                     ),
                   ),
-                  const Divider(height: 1, indent: 20, endIndent: 20),
+                  Divider(height: 1, indent: 20, endIndent: 20, color: isDark ? Colors.white10 : Colors.grey.shade300),
                   _buildSettingsTile(
+                    isDark: isDark,
                     icon: Icons.share_outlined,
                     color: Colors.blue,
                     title: "Share App",
                   ),
-                  const Divider(height: 1, indent: 20, endIndent: 20),
+                  Divider(height: 1, indent: 20, endIndent: 20, color: isDark ? Colors.white10 : Colors.grey.shade300),
                   _buildSettingsTile(
+                    isDark: isDark,
                     icon: Icons.feedback_outlined,
                     color: Colors.redAccent,
                     title: "Feedback",
@@ -120,9 +132,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const SentimentScreen()));
                     },
                   ),
-                  const Divider(height: 1, indent: 20, endIndent: 20),
-                  // --- LOGOUT TILE ---
+                  Divider(height: 1, indent: 20, endIndent: 20, color: isDark ? Colors.white10 : Colors.grey.shade300),
                   _buildSettingsTile(
+                    isDark: isDark,
                     icon: Icons.logout,
                     color: Colors.red,
                     title: "Logout",
@@ -134,7 +146,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 35),
 
-            // EDIT PROFILE BUTTON
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -157,6 +168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildSettingsTile({
+    required bool isDark,
     required IconData icon,
     required Color color,
     required String title,
@@ -176,9 +188,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       title: Text(
         title,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+        style: TextStyle(
+          fontSize: 18, 
+          fontWeight: FontWeight.w500,
+          color: isDark ? Colors.white : Colors.black, // Logic added here
+        ),
       ),
-      trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+      trailing: trailing ?? Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.white54 : Colors.grey),
     );
   }
 }

@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:dio/dio.dart'; // Add Dio for downloads
-import 'package:path_provider/path_provider.dart'; // Add for file storage
+import 'package:dio/dio.dart'; 
+import 'package:path_provider/path_provider.dart'; 
 import '../theme_provider.dart';
-import 'note_page.dart'; // Import your new NotePage
+import 'note_page.dart'; 
+import 'quiz_screen.dart';
 
 class LessonPage extends StatelessWidget {
   final String subjectId;
@@ -16,31 +17,27 @@ class LessonPage extends StatelessWidget {
     required this.title
   });
 
-  // --- DOWNLOAD LOGIC ---
+  // --- UPDATED DOWNLOAD LOGIC ---
   Future<void> _downloadAndOpenPDF(BuildContext context, bool isViewOnly) async {
     try {
-      // Show a loading dialog
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.white)),
       );
 
-      // 1. Define the URL (Replace with your VPS IP and actual PDF path)
-      String url = "http://109.199.120.38/pdfs/$subjectId.pdf"; 
+      // FIX: Matches your VPS folder structure and port 8001
+      // Path: http://IP:8001/pdfs/SubjectName/SubjectName.pdf
+      String url = "http://109.199.120.38:8001/pdfs/$subjectId/$subjectId.pdf"; 
       
-      // 2. Get the local storage path
       Directory tempDir = await getApplicationDocumentsDirectory();
       String fullPath = "${tempDir.path}/$subjectId.pdf";
 
-      // 3. Download the file
       await Dio().download(url, fullPath);
 
-      // Close loading dialog
-      Navigator.pop(context);
+      if (context.mounted) Navigator.pop(context); // Close loading dialog
 
       if (isViewOnly) {
-        // 4. Open the NotePage
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -53,9 +50,9 @@ class LessonPage extends StatelessWidget {
         );
       }
     } catch (e) {
-      Navigator.pop(context); // Close loader
+      if (context.mounted) Navigator.pop(context); 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error: Could not fetch PDF. $e")),
+        SnackBar(content: Text("❌ Error: Could not fetch PDF. Ensure the file exists in 'assert lessons/$subjectId/'")),
       );
     }
   }
@@ -76,6 +73,7 @@ class LessonPage extends StatelessWidget {
       ),
       body: Column(
         children: [
+          // Header Section
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
@@ -112,7 +110,7 @@ class LessonPage extends StatelessWidget {
                   "VIEW PDF NOTES",
                   Icons.picture_as_pdf,
                   isDark ? Colors.deepPurpleAccent : Colors.deepPurple,
-                  () => _downloadAndOpenPDF(context, true), // VIEW
+                  () => _downloadAndOpenPDF(context, true), 
                 ),
                 const SizedBox(height: 16),
                 _buildMenuButton(
@@ -120,15 +118,26 @@ class LessonPage extends StatelessWidget {
                   "DOWNLOAD PDF",
                   Icons.download,
                   isDark ? Colors.blueGrey.shade700 : Colors.blueGrey,
-                  () => _downloadAndOpenPDF(context, false), // DOWNLOAD ONLY
+                  () => _downloadAndOpenPDF(context, false), 
                 ),
                 const SizedBox(height: 16),
+                
                 _buildMenuButton(
                   context,
                   "PRACTICE QUIZ",
                   Icons.quiz,
                   isDark ? Colors.orange.shade900 : Colors.orange.shade800,
-                  () { /* Quiz Logic */ }
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => QuizScreen(
+                          lessonId: subjectId, 
+                          subjectId: subjectId, 
+                        ),
+                      ),
+                    );
+                  }
                 ),
               ],
             ),

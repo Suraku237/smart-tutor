@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; 
 import '../services/dummy_data.dart';
 import '../theme_provider.dart';
-import 'lesson_screen.dart'; // We are going here first
+import 'lesson_screen.dart'; 
 import 'profile_screen.dart';
 import 'sentiment_screen.dart';
 
@@ -56,13 +56,14 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final bool isDark = themeProvider.isDarkMode;
 
     return Scaffold(
-      backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.grey[100],
+      backgroundColor: isDark ? Colors.black : Colors.grey[100],
       appBar: AppBar(
         title: const Text("Smart Tutor", style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: isDark ?Colors.deepPurple : Colors.deepPurple,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -71,9 +72,9 @@ class _HomePageState extends State<HomePage> {
           // HEADER
           Container(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 25),
-            decoration: const BoxDecoration(
-              color: Colors.deepPurple,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: isDark ?Colors.deepPurple : Colors.deepPurple,
+              borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
               ),
@@ -92,18 +93,26 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 20),
                 Container(
                   decoration: BoxDecoration(
-                    color: themeProvider.isDarkMode ? Colors.grey[900] : Colors.white,
+                    color: isDark ? Colors.grey[850] : Colors.white,
                     borderRadius: BorderRadius.circular(15),
-                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark ? Colors.black54 : Colors.black12, 
+                        blurRadius: 10
+                      )
+                    ],
                   ),
                   child: TextField(
                     controller: _searchController,
                     onChanged: filterSubjects,
-                    decoration: const InputDecoration(
+                    // Fix: Input text color for Dark Mode
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                    decoration: InputDecoration(
                       hintText: "Search subjects...",
-                      prefixIcon: Icon(Icons.search, color: Colors.deepPurple),
+                      hintStyle: TextStyle(color: isDark ? Colors.white60 : Colors.grey),
+                      prefixIcon: Icon(Icons.search, color: isDark ? Colors.deepPurpleAccent : Colors.deepPurple),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 15),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 15),
                     ),
                   ),
                 ),
@@ -118,7 +127,7 @@ class _HomePageState extends State<HomePage> {
               itemCount: filteredSubjects.length,
               itemBuilder: (context, index) {
                 var subject = filteredSubjects[index];
-                return _buildSubjectPaperTile(subject, themeProvider);
+                return _buildSubjectPaperTile(subject, isDark);
               },
             ),
           ),
@@ -127,9 +136,9 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.white,
-        selectedItemColor: Colors.deepPurple,
-        unselectedItemColor: Colors.grey,
+        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
+        selectedItemColor: isDark ? Colors.deepPurpleAccent : Colors.deepPurple,
+        unselectedItemColor: isDark ? Colors.white38 : Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
@@ -140,15 +149,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildSubjectPaperTile(Map<String, dynamic> subject, ThemeProvider theme) {
+  Widget _buildSubjectPaperTile(Map<String, dynamic> subject, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: theme.isDarkMode ? Colors.grey[900] : Colors.white,
+        color: isDark ? Colors.grey[900] : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: isDark ? Colors.black26 : Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
@@ -156,13 +165,12 @@ class _HomePageState extends State<HomePage> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
-        // --- NAVIGATION CHANGE HERE ---
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => LessonScreen(
-                subjectId: subject["id"], // Go to LessonScreen first
+                subjectId: subject["id"],
               ),
             ),
           );
@@ -171,7 +179,7 @@ class _HomePageState extends State<HomePage> {
           width: 55,
           height: 55,
           decoration: BoxDecoration(
-            color: Colors.deepPurple.withOpacity(0.1),
+            color: isDark ? Colors.deepPurple.withOpacity(0.2) : Colors.deepPurple.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
@@ -183,10 +191,23 @@ class _HomePageState extends State<HomePage> {
         ),
         title: Text(
           subject["name"],
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(
+            fontWeight: FontWeight.bold, 
+            fontSize: 18,
+            color: isDark ? Colors.white : Colors.black, // Title color logic
+          ),
         ),
-        subtitle: const Text("View all papers & notes", style: TextStyle(fontSize: 12)),
-        trailing: const Icon(Icons.chevron_right, color: Colors.deepPurple),
+        subtitle: Text(
+          "View all papers & notes", 
+          style: TextStyle(
+            fontSize: 12,
+            color: isDark ? Colors.white60 : Colors.black54, // Subtitle color logic
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right, 
+          color: isDark ? Colors.deepPurpleAccent : Colors.deepPurple
+        ),
       ),
     );
   }
