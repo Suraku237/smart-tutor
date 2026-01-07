@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Add this
-import '../theme_provider.dart';        // Ensure this path is correct
+import 'package:provider/provider.dart';
+import '../theme_provider.dart';
 
 class SentimentScreen extends StatefulWidget {
   const SentimentScreen({super.key});
@@ -13,7 +13,9 @@ class _SentimentScreenState extends State<SentimentScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   bool isLoading = false;
-  String? aiMessage;
+  
+  // Storage for chat messages
+  List<Map<String, String>> qaHistory = [];
 
   late AnimationController animController;
   late Animation<double> fadeAnim;
@@ -21,43 +23,37 @@ class _SentimentScreenState extends State<SentimentScreen>
   @override
   void initState() {
     super.initState();
-
     animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-
-    fadeAnim = CurvedAnimation(
-      parent: animController,
-      curve: Curves.easeIn,
-    );
+    fadeAnim = CurvedAnimation(parent: animController, curve: Curves.easeIn);
   }
 
-  void analyzeSentiment() {
-    String userText = _controller.text.trim();
-    if (userText.isEmpty) return;
+  void askQuestion() {
+    String question = _controller.text.trim();
+    if (question.isEmpty) return;
 
     setState(() {
       isLoading = true;
-      aiMessage = null;
+      qaHistory.add({
+        "sender": "user", 
+        "text": question, 
+        "time": "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}"
+      });
     });
 
     _controller.clear();
 
+    // Simulated Admin Response
     Future.delayed(const Duration(seconds: 2), () {
       setState(() {
         isLoading = false;
-        if (userText.contains("tired") || userText.contains("stress")) {
-          aiMessage = "I’m sorry you’re feeling stressed 😔. "
-              "Take a short break, breathe, and we will continue at your pace.";
-        } else if (userText.contains("happy") || userText.contains("good")) {
-          aiMessage = "That's great to hear! 😊 Let's keep the momentum going!";
-        } else if (userText.contains("confused") || userText.contains("don't understand")) {
-          aiMessage = "No worries! 🤝 I will explain the topic again in a simpler way.";
-        } else {
-          aiMessage = "Thank you for sharing how you feel 💬 "
-              "I’m here to support your learning journey.";
-        }
+        qaHistory.add({
+          "sender": "admin", 
+          "text": "Message received. An administrator will review your request shortly.",
+          "time": "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}"
+        });
         animController.forward(from: 0);
       });
     });
@@ -65,99 +61,114 @@ class _SentimentScreenState extends State<SentimentScreen>
 
   @override
   Widget build(BuildContext context) {
-    // 1. Listen to the ThemeProvider
     final themeProvider = Provider.of<ThemeProvider>(context);
     final bool isDark = themeProvider.isDarkMode;
 
     return Scaffold(
-      // 2. Set dynamic background color
-      backgroundColor: isDark ? Colors.black : Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text("Sentiment Support", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.deepPurple,
+        title: const Text("Sentemet", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        backgroundColor: isDark ? const Color(0xFF1F2C34) : Colors.deepPurple,
         foregroundColor: Colors.white,
-        centerTitle: true,
+        elevation: 0,
       ),
-
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      body: Container(
+        // WhatsApp Wallpaper Background
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0B141A) : const Color(0xFFE5DDD5),
+        ),
         child: Column(
           children: [
-            // CHAT BUBBLE — AI RESPONSE
-            if (aiMessage != null)
-              FadeTransition(
-                opacity: fadeAnim,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    // 3. Dynamic Bubble Color
-                    color: isDark ? Colors.deepPurple.shade900.withOpacity(0.4) : Colors.deepPurple.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                    border: isDark ? Border.all(color: Colors.deepPurple.shade700, width: 1) : null,
-                  ),
-                  child: Text(
-                    aiMessage!,
-                    style: TextStyle(
-                      fontSize: 17,
-                      height: 1.4,
-                      // 4. Dynamic Text Color
-                      color: isDark ? Colors.white : Colors.black87,
+            // The BarChart container has been removed from here to clean up the UI
+            
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+                itemCount: qaHistory.length,
+                itemBuilder: (context, index) {
+                  bool isUser = qaHistory[index]['sender'] == "user";
+                  return Align(
+                    alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+                      decoration: BoxDecoration(
+                        color: isUser 
+                            ? (isDark ? const Color(0xFF005C4B) : const Color(0xFFDCF8C6))
+                            : (isDark ? const Color(0xFF1F2C34) : Colors.white),
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(12),
+                          topRight: const Radius.circular(12),
+                          bottomLeft: isUser ? const Radius.circular(12) : Radius.zero,
+                          bottomRight: isUser ? Radius.zero : const Radius.circular(12),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            qaHistory[index]['text']!,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87, 
+                              fontSize: 16
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            qaHistory[index]['time']!,
+                            style: TextStyle(
+                              color: isDark ? Colors.white60 : Colors.black45, 
+                              fontSize: 11
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
+            ),
 
-            // LOADING INDICATOR
-            if (isLoading)
-              Row(
-                children: [
-                  const CircularProgressIndicator(color: Colors.deepPurple),
-                  const SizedBox(width: 12),
-                  Text(
-                    "SmartTutor is analyzing...",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: isDark ? Colors.white70 : Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-
-            const Spacer(),
-
-            // INPUT FIELD CONTAINER
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                // 5. Dynamic Input Box Color
-                color: isDark ? Colors.grey[900] : Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                    color: isDark ? Colors.black54 : Colors.black12,
-                  )
-                ],
-                borderRadius: BorderRadius.circular(14),
-                border: isDark ? Border.all(color: Colors.grey.shade800) : null,
-              ),
+            // WhatsApp Style Bottom Input
+            Padding(
+              padding: const EdgeInsets.all(8.0),
               child: Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                      decoration: InputDecoration(
-                        hintText: "Tell SmartTutor how you feel...",
-                        hintStyle: TextStyle(color: isDark ? Colors.grey : Colors.grey.shade400),
-                        border: InputBorder.none,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1F2C34) : Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.add, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.emoji_emotions_outlined, color: Colors.grey),
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                              decoration: const InputDecoration(
+                                hintText: "Type a message",
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.only(left: 10),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.send, color: Colors.deepPurple),
-                    onPressed: analyzeSentiment,
+                  const SizedBox(width: 5),
+                  GestureDetector(
+                    onTap: askQuestion,
+                    child: const CircleAvatar(
+                      backgroundColor: Colors.deepPurple,
+                      radius: 24,
+                      child: Icon(Icons.send, color: Colors.white, size: 20),
+                    ),
                   ),
                 ],
               ),
