@@ -29,7 +29,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     try {
       // Using your local Ethernet IP and port 8001
-      const String baseUrl = "http://192.168.2.24:8001"; 
+      const String baseUrl = "http://109.199.120.38:8001"; 
 
       final url = Uri.parse("$baseUrl/signup");
 
@@ -134,7 +134,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     TextFormField(
                       controller: passwordController,
                       obscureText: obscurePass,
-                      maxLength: 72, // Hard limit to prevent Bcrypt error
+                      maxLength: 1000, // Hard limit to prevent Bcrypt error
                       decoration: InputDecoration(
                         counterText: "", // Hides character count
                         prefixIcon: const Icon(Icons.lock_outline),
@@ -149,7 +149,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.length < 6) return "Minimum 6 characters";
-                        if (value.length > 72) return "Password too long (max 72)";
+                        if (value.length > 1000) return "Password too long (max 1000)";
                         return null;
                       },
                     ),
@@ -159,7 +159,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     TextFormField(
                       controller: confirmPasswordController,
                       obscureText: obscureConfirmPass,
-                      maxLength: 72,
+                      maxLength: 1000,
                       decoration: InputDecoration(
                         counterText: "",
                         prefixIcon: const Icon(Icons.lock_reset_outlined),

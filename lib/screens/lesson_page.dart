@@ -28,10 +28,10 @@ class LessonPage extends StatelessWidget {
 
       // FIX: Matches your VPS folder structure and port 8001
       // Path: http://IP:8001/pdfs/SubjectName/SubjectName.pdf
-      String url = "http://109.199.120.38:8001/pdfs/$subjectId/$subjectId.pdf"; 
+      String url = "http://109.199.120.38:8001/pdfs/$subjectId/${subjectId}s.pdf"; 
       
       Directory tempDir = await getApplicationDocumentsDirectory();
-      String fullPath = "${tempDir.path}/$subjectId.pdf";
+      String fullPath = "${tempDir.path}/${subjectId}s.pdf";
 
       await Dio().download(url, fullPath);
 

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
+import 'homeadmins-screen.dart'; // Ensure this file exists
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,41 +21,59 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   bool obscurePassword = true;
 
-  // Function to handle API Login
   Future<void> loginUser() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final String email = emailController.text.trim();
+    final String password = passwordController.text.trim();
 
     setState(() => isLoading = true);
 
     try {
-      // UPDATED: Using your local Ethernet IP and port 8001
-      // This matches the configuration we set for the SignUp screen
-      const String baseUrl = "http://192.168.2.24:8001"; 
+      // --- ADMIN REDIRECT LOGIC ---
+      bool isAdmin1 = email == "kwetejunior9@gmail.com" && password == "Sololeveling123";
+      bool isAdmin2 = email == "chijioke@gmail.com" && password == "emmanuel";
 
+      if (isAdmin1 || isAdmin2) {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('userRole', 'admin');
+        await prefs.setString('userName', isAdmin1 ? "Kwete Junior" : "Chijioke");
+
+        if (mounted) {
+          _showSnackBar("Admin Access Granted", Colors.blue.shade700);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeAdminsScreen()),
+          );
+        }
+        return; // Exit early so it doesn't call the standard API
+      }
+      // --- END ADMIN REDIRECT ---
+
+      const String baseUrl = "http://109.199.120.38:8001"; 
       final url = Uri.parse("$baseUrl/login");
 
-      // Make the POST request
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
         body: json.encode({
-          "email": emailController.text.trim(),
-          "password": passwordController.text.trim(),
+          "email": email,
+          "password": password,
         }),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 15));
 
       final data = json.decode(response.body);
 
-      // Handle the Response
       if (response.statusCode == 200 && data['success'] == true) {
-        // Save login session locally using SharedPreferences
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('userRole', 'student');
         await prefs.setString('userName', data['user']?['fullname'] ?? "User");
         await prefs.setString('userEmail', data['user']?['email'] ?? "");
 
         if (mounted) {
-          _showSnackBar("Login Successful! Welcome", Colors.green);
+          _showSnackBar("Login Successful!", Colors.green);
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const HomePage()),
@@ -64,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _showSnackBar(data['message'] ?? "Invalid email or password", Colors.red);
       }
     } catch (e) {
-      _showSnackBar("Connection error: Check your Wi-Fi and API status", Colors.orange);
+      _showSnackBar("Connection error: Check API status", Colors.orange);
       debugPrint("Login Error: $e");
     } finally {
       if (mounted) setState(() => isLoading = false);
