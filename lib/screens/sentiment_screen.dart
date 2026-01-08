@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Add this
+import 'package:http/http.dart' as http; // Add this
+import 'dart:convert'; // Add this
 import '../theme_provider.dart';
 
 class SentimentScreen extends StatefulWidget {
@@ -13,50 +16,81 @@ class _SentimentScreenState extends State<SentimentScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   bool isLoading = false;
-  
-  // Storage for chat messages
   List<Map<String, String>> qaHistory = [];
-
-  late AnimationController animController;
-  late Animation<double> fadeAnim;
+  String? userEmail;
 
   @override
   void initState() {
     super.initState();
-    animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    fadeAnim = CurvedAnimation(parent: animController, curve: Curves.easeIn);
+    _loadUserAndMessages(); // Load data when screen opens
   }
 
-  void askQuestion() {
-    String question = _controller.text.trim();
-    if (question.isEmpty) return;
-
+  // 1. Load the user's email and fetch their specific history from the API
+  Future<void> _loadUserAndMessages() async {
+    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      isLoading = true;
-      qaHistory.add({
-        "sender": "user", 
-        "text": question, 
-        "time": "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}"
-      });
+      userEmail = prefs.getString('userEmail'); // Make sure you saved this during login
     });
 
+    if (userEmail != null) {
+      fetchChatHistory();
+    }
+  }
+
+  // 2. Fetch messages from the GET endpoint
+  Future<void> fetchChatHistory() async {
+    try {
+      final response = await http.get(
+        Uri.parse("http://109.199.120.38:8001/get_messages/$userEmail"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success']) {
+          setState(() {
+            qaHistory = List<Map<String, String>>.from(
+              data['history'].map((item) => {
+                "sender": item['sender_type'].toString(),
+                "text": item['message_text'].toString(),
+                "time": item['timestamp'].toString(),
+              }),
+            );
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching history: $e");
+    }
+  }
+
+  // 3. Send message to the POST endpoint
+  Future<void> askQuestion() async {
+    String question = _controller.text.trim();
+    if (question.isEmpty || userEmail == null) return;
+
+    setState(() => isLoading = true);
     _controller.clear();
 
-    // Simulated Admin Response
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        isLoading = false;
-        qaHistory.add({
-          "sender": "admin", 
-          "text": "Message received. An administrator will review your request shortly.",
-          "time": "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}"
-        });
-        animController.forward(from: 0);
-      });
-    });
+    try {
+      final response = await http.post(
+        Uri.parse("http://109.199.120.38:8001/send_message"),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({
+          "email": userEmail,
+          "message": question,
+          "sender": "user",
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Refresh history to show the new message
+        fetchChatHistory();
+      }
+    } catch (e) {
+      print("Error sending message: $e");
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -66,20 +100,17 @@ class _SentimentScreenState extends State<SentimentScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Sentemet", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text("Support Chat", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         backgroundColor: isDark ? const Color(0xFF1F2C34) : Colors.deepPurple,
         foregroundColor: Colors.white,
-        elevation: 0,
       ),
       body: Container(
-        // WhatsApp Wallpaper Background
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF0B141A) : const Color(0xFFE5DDD5),
         ),
         child: Column(
           children: [
-            // The BarChart container has been removed from here to clean up the UI
-            
+            if (isLoading) const LinearProgressIndicator(color: Colors.deepPurple),
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
@@ -96,30 +127,18 @@ class _SentimentScreenState extends State<SentimentScreen>
                         color: isUser 
                             ? (isDark ? const Color(0xFF005C4B) : const Color(0xFFDCF8C6))
                             : (isDark ? const Color(0xFF1F2C34) : Colors.white),
-                        borderRadius: BorderRadius.only(
-                          topLeft: const Radius.circular(12),
-                          topRight: const Radius.circular(12),
-                          bottomLeft: isUser ? const Radius.circular(12) : Radius.zero,
-                          bottomRight: isUser ? Radius.zero : const Radius.circular(12),
-                        ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
                             qaHistory[index]['text']!,
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black87, 
-                              fontSize: 16
-                            ),
+                            style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 16),
                           ),
-                          const SizedBox(height: 4),
                           Text(
                             qaHistory[index]['time']!,
-                            style: TextStyle(
-                              color: isDark ? Colors.white60 : Colors.black45, 
-                              fontSize: 11
-                            ),
+                            style: TextStyle(color: isDark ? Colors.white60 : Colors.black45, fontSize: 11),
                           ),
                         ],
                       ),
@@ -128,53 +147,42 @@ class _SentimentScreenState extends State<SentimentScreen>
                 },
               ),
             ),
-
-            // WhatsApp Style Bottom Input
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1F2C34) : Colors.white,
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.add, color: Colors.grey),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.emoji_emotions_outlined, color: Colors.grey),
-                          Expanded(
-                            child: TextField(
-                              controller: _controller,
-                              style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                              decoration: const InputDecoration(
-                                hintText: "Type a message",
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.only(left: 10),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  GestureDetector(
-                    onTap: askQuestion,
-                    child: const CircleAvatar(
-                      backgroundColor: Colors.deepPurple,
-                      radius: 24,
-                      child: Icon(Icons.send, color: Colors.white, size: 20),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // ... (Your Bottom Input Field remains the same, just ensure it calls askQuestion)
+            _buildInputArea(isDark),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildInputArea(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1F2C34) : Colors.white,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: TextField(
+                controller: _controller,
+                style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                decoration: const InputDecoration(hintText: "Type a message", border: InputBorder.none),
+              ),
+            ),
+          ),
+          const SizedBox(width: 5),
+          GestureDetector(
+            onTap: askQuestion,
+            child: const CircleAvatar(
+              backgroundColor: Colors.deepPurple,
+              child: Icon(Icons.send, color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }
