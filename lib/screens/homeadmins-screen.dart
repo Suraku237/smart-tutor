@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smartproject/screens/upload_lesson.dart';
 import 'login_screen.dart';
 
 class HomeAdminsScreen extends StatefulWidget {
@@ -89,9 +90,19 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
               crossAxisSpacing: 15,
               mainAxisSpacing: 15,
               children: [
-                _buildAdminCard(context, "Upload Lesson", Icons.cloud_upload_outlined, Colors.blue, () {
-                  // TODO: Add Upload Logic
-                }),
+                _buildAdminCard(
+                  context, 
+                  "Upload Lesson", 
+                  Icons.cloud_upload_outlined, 
+                  Colors.blue, 
+                  () {
+                    // Navigate to the Upload Lesson Screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const UploadLessonScreen()),
+                    );
+                  },
+                ),
                 _buildAdminCard(context, "Manage Users", Icons.people_alt_outlined, Colors.orange, () {
                   // TODO: Add User Management Logic
                 }),

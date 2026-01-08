@@ -1,8 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/lesson.dart';
-import '../services/dummy_data.dart';
 import '../services/ai_service.dart';
 import '../theme_provider.dart';
 import 'quiz_screen.dart';
@@ -20,13 +20,43 @@ class LessonScreen extends StatefulWidget {
 class _LessonScreenState extends State<LessonScreen> {
   bool _isLoadingAI = false;
   String _aiResponse = "";
+  late Future<List<Lesson>> _lessonsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshLessons(); // Initial fetch
+  }
+
+  // Fetches data from VPS and maps it to Lesson models
+  Future<List<Lesson>> _fetchLessonsFromVPS() async {
+    try {
+      final response = await Dio().get("http://109.199.120.38:8001/get_lessons");
+      if (response.data['success']) {
+        List data = response.data['lessons'];
+        
+        return data
+            .map((json) => Lesson.fromJson(json))
+            .where((lesson) => lesson.category.toLowerCase() == widget.subjectId.toLowerCase())
+            .toList();
+      }
+    } catch (e) {
+      print("Error: $e");
+    }
+    return [];
+  }
+
+  Future<void> _refreshLessons() async {
+    setState(() {
+      _lessonsFuture = _fetchLessonsFromVPS();
+    });
+  }
 
   Future<void> _generateAILesson() async {
     setState(() {
       _isLoadingAI = true;
       _aiResponse = "";
     });
-
     try {
       final result = await AIService.generateLessonContent(widget.subjectId);
       setState(() => _aiResponse = result);
@@ -38,7 +68,6 @@ class _LessonScreenState extends State<LessonScreen> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    List<Lesson> lessons = DummyData.lessons[widget.subjectId] ?? [];
 
     return Scaffold(
       backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.grey[100],
@@ -48,46 +77,62 @@ class _LessonScreenState extends State<LessonScreen> {
         backgroundColor: Colors.deepPurple,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _refreshLessons),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildAICard(themeProvider),
-            const SizedBox(height: 25),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Available Papers",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                Text("View All",
-                    style: TextStyle(
-                        color: Colors.deepPurple, fontWeight: FontWeight.w600)),
-              ],
-            ),
-            const SizedBox(height: 15),
+      body: RefreshIndicator(
+        onRefresh: _refreshLessons,
+        color: Colors.deepPurple,
+        child: FutureBuilder<List<Lesson>>(
+          future: _lessonsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-            // --- LIST OF PAPERS ---
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: lessons.length,
-              itemBuilder: (context, index) {
-                return _buildLessonPaperTile(
-                    lessons[index], index, themeProvider);
-              },
-            ),
+            final lessons = snapshot.data ?? [];
 
-            const SizedBox(height: 20),
-            _buildStartQuizButton(lessons),
-            const SizedBox(height: 80),
-          ],
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(), // Important for RefreshIndicator
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildAICard(themeProvider),
+                  const SizedBox(height: 25),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Available Papers",
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      Text("${lessons.length} Files",
+                          style: const TextStyle(color: Colors.grey)),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+
+                  // --- DYNAMIC LIST OF PAPERS ---
+                  lessons.isEmpty
+                      ? _buildEmptyState(themeProvider.isDarkMode)
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: lessons.length,
+                          itemBuilder: (context, index) {
+                            return _buildLessonPaperTile(
+                                lessons[index], index, themeProvider);
+                          },
+                        ),
+
+                  const SizedBox(height: 20),
+                  if (lessons.isNotEmpty) _buildStartQuizButton(lessons),
+                  const SizedBox(height: 80),
+                ],
+              ),
+            );
+          },
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -96,6 +141,22 @@ class _LessonScreenState extends State<LessonScreen> {
         icon: const Icon(Icons.auto_awesome, color: Colors.white),
         label: Text(_isLoadingAI ? "Thinking..." : "AI Deep Dive",
             style: const TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Column(
+          children: [
+            Icon(Icons.folder_open, size: 50, color: Colors.grey[400]),
+            const SizedBox(height: 10),
+            Text("No PDF materials found yet.",
+                style: TextStyle(color: Colors.grey[600])),
+          ],
+        ),
       ),
     );
   }

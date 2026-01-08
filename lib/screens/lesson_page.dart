@@ -1,24 +1,47 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:dio/dio.dart'; 
-import 'package:path_provider/path_provider.dart'; 
-import '../theme_provider.dart';
-import 'note_page.dart'; 
-import 'quiz_screen.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
-class LessonPage extends StatelessWidget {
-  final String subjectId;
+import 'package:smartproject/screens/note_page.dart';
+import 'package:smartproject/theme_provider.dart';
+
+class LessonPage extends StatefulWidget {
+  final String subjectId; // This acts as our Category filter
   final String title;
 
-  const LessonPage({
-    super.key,
-    required this.subjectId,
-    required this.title
-  });
+  const LessonPage({super.key, required this.subjectId, required this.title});
 
-  // --- UPDATED DOWNLOAD LOGIC ---
-  Future<void> _downloadAndOpenPDF(BuildContext context, bool isViewOnly) async {
+  @override
+  State<LessonPage> createState() => _LessonPageState();
+}
+
+class _LessonPageState extends State<LessonPage> {
+  late Future<List<dynamic>> _lessonsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _lessonsFuture = _fetchLessons();
+  }
+
+  Future<List<dynamic>> _fetchLessons() async {
+    try {
+      // Fetching only lessons that match this subject/category
+      final response = await Dio().get("http://109.199.120.38:8001/get_lessons");
+      if (response.data['success']) {
+        List allLessons = response.data['lessons'];
+        // Filter lessons by the current subjectId (Category)
+        return allLessons.where((l) => l['category'] == widget.subjectId).toList();
+      }
+      } catch (e) {
+        debugPrint("Fetch Error: $e");
+      }
+      return [];
+    }
+
+    Future<void> _downloadAndOpenPDF(BuildContext context, String category, String title, bool isViewOnly) async {
     try {
       showDialog(
         context: context,
@@ -26,37 +49,33 @@ class LessonPage extends StatelessWidget {
         builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.white)),
       );
 
-      // FIX: Matches your VPS folder structure and port 8001
-      // Path: http://IP:8001/pdfs/SubjectName/SubjectName.pdf
-      String url = "http://109.199.120.38:8001/pdfs/$subjectId/${subjectId}s.pdf"; 
-      
+      // Matches: http://109.199.120.38:8001/assert%20lessons/Math/Algebra.pdf
+      String folder = Uri.encodeComponent(category);
+      String file = Uri.encodeComponent(title);
+
+      String url = "http://109.199.120.38:8001/pdfs/$folder/$file.pdf";
+      print("Requesting URL: $url"); // Check this output in your Flutter console!
+
       Directory tempDir = await getApplicationDocumentsDirectory();
-      String fullPath = "${tempDir.path}/${subjectId}s.pdf";
+      String fullPath = "${tempDir.path}/${title.replaceAll(' ', '_')}.pdf";
 
       await Dio().download(url, fullPath);
 
       if (context.mounted) Navigator.pop(context); // Close loading dialog
 
       if (isViewOnly) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => NotePage(pdfPath: fullPath, title: title),
-          ),
-        );
+        // Navigate to your PDF Viewer page
+        Navigator.push(context, MaterialPageRoute(builder: (context) => NotePage(pdfPath: fullPath, title: title)));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ PDF Downloaded Successfully!")),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ PDF Saved to Documents")));
       }
     } catch (e) {
-      if (context.mounted) Navigator.pop(context); 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error: Could not fetch PDF. Ensure the file exists in 'assert lessons/$subjectId/'")),
-      );
+      if (context.mounted) Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("❌ Error fetching PDF: $e")));
+      debugPrint("❌ Error fetching PDF: $e");
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -65,102 +84,88 @@ class LessonPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text("Study Options", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: isDark ? Colors.grey[900] : Colors.deepPurple,
         foregroundColor: Colors.white,
-        elevation: 0,
         centerTitle: true,
       ),
-      body: Column(
+      body: FutureBuilder<List<dynamic>>(
+        future: _lessonsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return _buildEmptyState(isDark);
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              final lesson = snapshot.data![index];
+              return _buildLessonCard(context, lesson, isDark);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLessonCard(BuildContext context, dynamic lesson, bool isDark) {
+    String lessonTitle = lesson['title'];
+    String category = lesson['category'];
+
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      color: isDark ? Colors.grey[850] : Colors.white,
+      child: ExpansionTile(
+        leading: const Icon(Icons.menu_book, color: Colors.deepPurple),
+        title: Text(lessonTitle, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+        subtitle: Text("PDF Lesson Notes", style: TextStyle(color: isDark ? Colors.grey : Colors.grey.shade600)),
         children: [
-          // Header Section
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[900] : Colors.deepPurple,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-            ),
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 45,
-                  backgroundColor: isDark ? Colors.deepPurple.withOpacity(0.3) : Colors.white24,
-                  child: const Icon(Icons.menu_book, size: 45, color: Colors.white),
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 40),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                _buildMenuButton(
-                  context,
-                  "VIEW PDF NOTES",
-                  Icons.picture_as_pdf,
-                  isDark ? Colors.deepPurpleAccent : Colors.deepPurple,
-                  () => _downloadAndOpenPDF(context, true), 
-                ),
-                const SizedBox(height: 16),
-                _buildMenuButton(
-                  context,
-                  "DOWNLOAD PDF",
-                  Icons.download,
-                  isDark ? Colors.blueGrey.shade700 : Colors.blueGrey,
-                  () => _downloadAndOpenPDF(context, false), 
-                ),
-                const SizedBox(height: 16),
-                
-                _buildMenuButton(
-                  context,
-                  "PRACTICE QUIZ",
-                  Icons.quiz,
-                  isDark ? Colors.orange.shade900 : Colors.orange.shade800,
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => QuizScreen(
-                          lessonId: subjectId, 
-                          subjectId: subjectId, 
-                        ),
-                      ),
-                    );
-                  }
-                ),
+                _buildActionButton(context, "VIEW PDF NOTES", Icons.picture_as_pdf, Colors.deepPurple, 
+                  () => _downloadAndOpenPDF(context, category, lessonTitle, true)),
+                const SizedBox(height: 10),
+                _buildActionButton(context, "DOWNLOAD PDF", Icons.download, Colors.blueGrey, 
+                  () => _downloadAndOpenPDF(context, category, lessonTitle, false)),
               ],
             ),
-          ),
+          )
         ],
       ),
     );
   }
 
-  Widget _buildMenuButton(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
-    return SizedBox(
-      width: double.infinity,
-      height: 60,
-      child: ElevatedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 24),
-        label: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        ),
+  Widget _buildActionButton(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(double.infinity, 50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      onPressed: onTap,
+      icon: Icon(icon),
+      label: Text(label),
+    );
+  }
+
+  Widget _buildEmptyState(bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.cloud_off, size: 80, color: isDark ? Colors.grey : Colors.grey.shade400),
+          const SizedBox(height: 10),
+          Text("No lessons added yet for ${widget.title}", style: const TextStyle(color: Colors.grey)),
+        ],
       ),
     );
   }

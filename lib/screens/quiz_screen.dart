@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/quiz.dart';
-import '../services/dummy_data.dart';
 import '../widgets/progress_bar.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -42,9 +41,6 @@ class _QuizScreenState extends State<QuizScreen>
     // FIX: Use the correct method to get quizzes
     // Option 1: Use getQuizzesByLesson (if it's working)
     //quizzes = DummyData.getQuizzesByLesson(widget.lessonId);
-    
-    // Option 2: OR get quizzes by subjectId directly
-    quizzes = DummyData.quizzes[widget.subjectId] ?? [];
     
     // Debug print to check if quizzes are loaded
     print("Quizzes loaded: ${quizzes.length}");

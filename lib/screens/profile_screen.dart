@@ -42,10 +42,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // --- NEW: About Us Dialog ---
+  void _showAboutDialog(BuildContext context, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.school, size: 50, color: Colors.deepPurple),
+            const SizedBox(height: 15),
+            const SizedBox(height: 10),
+            const Text(
+              "Version 1.0.0",
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CLOSE", style: TextStyle(color: Colors.deepPurpleAccent)),
+          )
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final bool isDark = themeProvider.isDarkMode; // Convenience variable
+    final bool isDark = themeProvider.isDarkMode;
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.grey.shade100,
@@ -66,23 +95,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Icon(Icons.person, size: 70, color: isDark ? Colors.deepPurpleAccent : Colors.deepPurple),
             ),
             const SizedBox(height: 16),
-            
-            // --- UPDATED NAME TEXT ---
             Text(
               fullName,
               style: TextStyle(
                 fontSize: 24, 
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black, // Logic added here
+                color: isDark ? Colors.white : Colors.black,
               ),
             ),
-            
-            // --- UPDATED EMAIL TEXT ---
             Text(
               email,
               style: TextStyle(
                 fontSize: 16, 
-                color: isDark ? Colors.white70 : Colors.grey.shade600, // Logic added here
+                color: isDark ? Colors.white70 : Colors.grey.shade600,
               ),
             ),
             const SizedBox(height: 30),
@@ -92,7 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: isDark ? Colors.grey[900] : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
-                  if (!isDark) // Only show shadow in light mode for a cleaner look
+                  if (!isDark)
                     BoxShadow(
                       color: Colors.black.withOpacity(0.08),
                       blurRadius: 15,
@@ -116,12 +141,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   Divider(height: 1, indent: 20, endIndent: 20, color: isDark ? Colors.white10 : Colors.grey.shade300),
+                  
+                  // --- UPDATED: About Us Tile ---
                   _buildSettingsTile(
                     isDark: isDark,
-                    icon: Icons.share_outlined,
+                    icon: Icons.info_outline, // Changed icon
                     color: Colors.blue,
-                    title: "Share App",
+                    title: "About Us", // Changed text
+                    onTap: () => _showAboutDialog(context, isDark), // Added action
                   ),
+                  
                   Divider(height: 1, indent: 20, endIndent: 20, color: isDark ? Colors.white10 : Colors.grey.shade300),
                   _buildSettingsTile(
                     isDark: isDark,
@@ -191,7 +220,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         style: TextStyle(
           fontSize: 18, 
           fontWeight: FontWeight.w500,
-          color: isDark ? Colors.white : Colors.black, // Logic added here
+          color: isDark ? Colors.white : Colors.black,
         ),
       ),
       trailing: trailing ?? Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.white54 : Colors.grey),

@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       // --- ADMIN REDIRECT LOGIC ---
-      bool isAdmin1 = email == "kwetejunior9@gmail.com" && password == "Sololeveling123";
+      bool isAdmin1 = email == "k@gmail.com" && password == "000000";
       bool isAdmin2 = email == "chijioke@gmail.com" && password == "emmanuel";
 
       if (isAdmin1 || isAdmin2) {

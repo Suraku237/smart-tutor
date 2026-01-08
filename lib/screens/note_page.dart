@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../theme_provider.dart';
 
 class NotePage extends StatefulWidget {
-  final String pdfPath; // Local path to the PDF file
-  final String title;   // Title of the lesson
+  final String pdfPath;
+  final String title;
 
   const NotePage({
     super.key, 
@@ -21,6 +21,9 @@ class _NotePageState extends State<NotePage> {
   int totalPages = 0;
   int currentPage = 0;
   bool isReady = false;
+  
+  // FIX: Added controller to allow programmatic page jumping
+  PDFViewController? _pdfViewController;
 
   @override
   Widget build(BuildContext context) {
@@ -30,18 +33,18 @@ class _NotePageState extends State<NotePage> {
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
-        title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: isDark ? Colors.grey[900] : Colors.deepPurple,
         foregroundColor: Colors.white,
+        elevation: 2,
         actions: [
-          // Page Indicator in AppBar
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Text(
-                "${currentPage + 1} / $totalPages",
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
+          // Page Indicator
+          Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              "${currentPage + 1} / $totalPages",
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
           )
         ],
@@ -51,14 +54,21 @@ class _NotePageState extends State<NotePage> {
           PDFView(
             filePath: widget.pdfPath,
             enableSwipe: true,
-            swipeHorizontal: false, // Vertical scrolling like a real notebook
+            swipeHorizontal: false, 
             autoSpacing: true,
             pageFling: true,
+            // Automatically inverts colors if the app is in Dark Mode
+            nightMode: isDark, 
             backgroundColor: isDark ? Colors.black : Colors.grey.shade200,
             onRender: (pages) {
               setState(() {
                 totalPages = pages!;
                 isReady = true;
+              });
+            },
+            onViewCreated: (PDFViewController controller) {
+              setState(() {
+                _pdfViewController = controller;
               });
             },
             onPageChanged: (page, total) {
@@ -67,40 +77,42 @@ class _NotePageState extends State<NotePage> {
               });
             },
             onError: (error) {
-              print("PDF Error: ${error.toString()}");
+              debugPrint("PDF Error: ${error.toString()}");
             },
           ),
           
-          // Loading Indicator until PDF is rendered
           if (!isReady)
-            const Center(
-              child: CircularProgressIndicator(color: Colors.deepPurple),
-            ),
+            const Center(child: CircularProgressIndicator(color: Colors.deepPurple)),
         ],
       ),
       
-      // Floating Action Buttons for Navigation
-      floatingActionButton: Row(
+      // Fixed Navigation Buttons
+      floatingActionButton: isReady ? Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          FloatingActionButton(
+          FloatingActionButton.small(
             heroTag: "prev",
-            backgroundColor: Colors.deepPurple,
+            backgroundColor: Colors.deepPurple.withOpacity(0.8),
             child: const Icon(Icons.keyboard_arrow_up, color: Colors.white),
             onPressed: () {
-              // PDFView doesn't have a direct controller method here, 
-              // but you can add a PDFViewController if you need programmatic jumps.
+              if (currentPage > 0) {
+                _pdfViewController?.setPage(currentPage - 1);
+              }
             },
           ),
-          const SizedBox(width: 10),
-          FloatingActionButton(
+          const SizedBox(height: 12),
+          FloatingActionButton.small(
             heroTag: "next",
-            backgroundColor: Colors.deepPurple,
+            backgroundColor: Colors.deepPurple.withOpacity(0.8),
             child: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              if (currentPage < totalPages - 1) {
+                _pdfViewController?.setPage(currentPage + 1);
+              }
+            },
           ),
         ],
-      ),
+      ) : null,
     );
   }
 }
