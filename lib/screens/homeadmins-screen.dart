@@ -103,7 +103,7 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
                     );
                   },
                 ),
-                _buildAdminCard(context, "Manage Users", Icons.people_alt_outlined, Colors.orange, () {
+                _buildAdminCard(context, "Delet lessons", Icons.delete_forever, Colors.orange, () {
                   // TODO: Add User Management Logic
                 }),
                 _buildAdminCard(context, "Lesson Reports", Icons.bar_chart_rounded, Colors.green, () {

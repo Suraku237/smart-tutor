@@ -128,7 +128,7 @@ class _SentimentScreenState extends State<SentimentScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Support Chat"),
-        backgroundColor: isDark ? const Color(0xFF1F2C34) : Colors.deepPurple,
+        backgroundColor: isDark ? Colors.deepPurple : Colors.deepPurple,
         actions: [
           // Refresh button to manually pull messages
           IconButton(icon: const Icon(Icons.refresh), onPressed: fetchChatHistory),

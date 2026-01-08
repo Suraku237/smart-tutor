@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../theme_provider.dart';
 import 'sentiment_screen.dart';
 import 'login_screen.dart';
+import 'about_us_screen.dart'; // Import your new screen here
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -42,35 +43,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // --- NEW: About Us Dialog ---
-  void _showAboutDialog(BuildContext context, bool isDark) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.school, size: 50, color: Colors.deepPurple),
-            const SizedBox(height: 15),
-            const SizedBox(height: 10),
-            const Text(
-              "Version 1.0.0",
-              style: TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("CLOSE", style: TextStyle(color: Colors.deepPurpleAccent)),
-          )
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -80,7 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: isDark ? Colors.black : Colors.grey.shade100,
       appBar: AppBar(
         title: const Text("Profile", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: isDark ? Colors.grey[900] : Colors.deepPurple,
+        backgroundColor: isDark ?Colors.deepPurple : Colors.deepPurple,
         foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
@@ -142,13 +114,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   Divider(height: 1, indent: 20, endIndent: 20, color: isDark ? Colors.white10 : Colors.grey.shade300),
                   
-                  // --- UPDATED: About Us Tile ---
+                  // --- RESTORED NAVIGATION ---
                   _buildSettingsTile(
                     isDark: isDark,
-                    icon: Icons.info_outline, // Changed icon
+                    icon: Icons.info_outline,
                     color: Colors.blue,
-                    title: "About Us", // Changed text
-                    onTap: () => _showAboutDialog(context, isDark), // Added action
+                    title: "About Us",
+                    onTap: () {
+                      // Pushes the full AboutUsScreen onto the navigation stack
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AboutUsScreen()),
+                      );
+                    },
                   ),
                   
                   Divider(height: 1, indent: 20, endIndent: 20, color: isDark ? Colors.white10 : Colors.grey.shade300),
@@ -223,7 +201,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: isDark ? Colors.white : Colors.black,
         ),
       ),
-      trailing: trailing ?? Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.white54 : Colors.grey),
+      trailing: trailing ?? (onTap != null ? Icon(Icons.arrow_forward_ios, size: 18, color: isDark ? Colors.white54 : Colors.grey) : null),
     );
   }
 }

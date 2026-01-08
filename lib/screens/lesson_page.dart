@@ -85,7 +85,7 @@ class _LessonPageState extends State<LessonPage> {
       backgroundColor: isDark ? Colors.black : Colors.grey.shade100,
       appBar: AppBar(
         title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: isDark ? Colors.grey[900] : Colors.deepPurple,
+        backgroundColor: isDark ? Colors.deepPurple : Colors.deepPurple,
         foregroundColor: Colors.white,
         centerTitle: true,
       ),
