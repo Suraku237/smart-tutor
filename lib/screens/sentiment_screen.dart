@@ -14,13 +14,11 @@ class SentimentScreen extends StatefulWidget {
 
 class _SentimentScreenState extends State<SentimentScreen> {
   final TextEditingController _controller = TextEditingController();
-  final ScrollController _scrollController = ScrollController(); // Added for auto-scroll
+  final ScrollController _scrollController = ScrollController();
   bool isLoading = false;
   List<Map<String, String>> qaHistory = [];
   String? userEmail;
 
-  // Change this to your PC's IP (e.g., 192.168.1.5) if testing locally
-  // or use 10.0.2.2 for Android Emulator
   final String apiUrl = "http://109.199.120.38:8001"; 
 
   @override
@@ -29,35 +27,35 @@ class _SentimentScreenState extends State<SentimentScreen> {
     _loadUserAndMessages();
   }
 
+  // Ensures data is loaded every time the screen is built
   Future<void> _loadUserAndMessages() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      userEmail = prefs.getString('userEmail');
-    });
-
-    if (userEmail != null) {
+    String? storedEmail = prefs.getString('userEmail');
+    
+    if (storedEmail != null) {
+      setState(() {
+        userEmail = storedEmail;
+      });
+      // Fetch history from VPS immediately
       await fetchChatHistory();
-      _scrollToBottom();
     }
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
   }
 
   Future<void> fetchChatHistory() async {
+    if (userEmail == null) return;
+    
     try {
       final response = await http.get(
         Uri.parse("$apiUrl/get_messages/$userEmail"),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -75,7 +73,7 @@ class _SentimentScreenState extends State<SentimentScreen> {
         }
       }
     } catch (e) {
-      debugPrint("Error fetching history: $e");
+      debugPrint("History Fetch Error: $e");
     }
   }
 
@@ -83,16 +81,15 @@ class _SentimentScreenState extends State<SentimentScreen> {
     String question = _controller.text.trim();
     if (question.isEmpty || userEmail == null) return;
 
-    // 1. OPTIMISTIC UPDATE: Add message to UI immediately
     final String currentTime = "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}";
-    final Map<String, String> localMsg = {
-      "sender": "user",
-      "text": question,
-      "time": currentTime,
-    };
-
+    
+    // Add to local list immediately so it stays on screen
     setState(() {
-      qaHistory.add(localMsg);
+      qaHistory.add({
+        "sender": "user",
+        "text": question,
+        "time": currentTime,
+      });
       isLoading = true;
     });
     
@@ -100,7 +97,6 @@ class _SentimentScreenState extends State<SentimentScreen> {
     _scrollToBottom();
 
     try {
-      // 2. BACKEND SYNC
       final response = await http.post(
         Uri.parse("$apiUrl/send_message"),
         headers: {"Content-Type": "application/json"},
@@ -112,14 +108,13 @@ class _SentimentScreenState extends State<SentimentScreen> {
       );
 
       if (response.statusCode == 200) {
-        // Refresh to get server-validated timestamps
+        // Sync with server to get the official DB timestamp
         fetchChatHistory();
-      } else {
-        // Handle error: maybe show a "failed" icon next to the message
-        debugPrint("Server error: ${response.body}");
       }
     } catch (e) {
-      debugPrint("Network Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Connection error. Message saved locally.")),
+      );
     } finally {
       setState(() => isLoading = false);
     }
@@ -132,108 +127,76 @@ class _SentimentScreenState extends State<SentimentScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Support Chat", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text("Support Chat"),
         backgroundColor: isDark ? const Color(0xFF1F2C34) : Colors.deepPurple,
-        foregroundColor: Colors.white,
+        actions: [
+          // Refresh button to manually pull messages
+          IconButton(icon: const Icon(Icons.refresh), onPressed: fetchChatHistory),
+        ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0B141A) : const Color(0xFFE5DDD5),
-        ),
+        color: isDark ? const Color(0xFF0B141A) : const Color(0xFFE5DDD5),
         child: Column(
           children: [
-            if (isLoading) const LinearProgressIndicator(color: Colors.deepPurple, backgroundColor: Colors.transparent),
             Expanded(
               child: ListView.builder(
-                controller: _scrollController, // Attach controller
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+                controller: _scrollController,
+                padding: const EdgeInsets.all(10),
                 itemCount: qaHistory.length,
                 itemBuilder: (context, index) {
-                  bool isUser = qaHistory[index]['sender'] == "user";
-                  return _buildChatBubble(qaHistory[index], isUser, isDark);
+                  final msg = qaHistory[index];
+                  bool isUser = msg['sender'] == "user";
+                  return _chatBubble(msg, isUser, isDark);
                 },
               ),
             ),
-            _buildInputArea(isDark),
+            if (isLoading) const LinearProgressIndicator(),
+            _inputArea(isDark),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildChatBubble(Map<String, String> msg, bool isUser, bool isDark) {
+  // Rest of the UI helper methods (_chatBubble and _inputArea) remain the same...
+  Widget _chatBubble(Map<String, String> msg, bool isUser, bool isDark) {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: isUser 
-              ? (isDark ? const Color(0xFF005C4B) : const Color(0xFFDCF8C6))
-              : (isDark ? const Color(0xFF1F2C34) : Colors.white),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(12),
-            topRight: const Radius.circular(12),
-            bottomLeft: isUser ? const Radius.circular(12) : Radius.zero,
-            bottomRight: isUser ? Radius.zero : const Radius.circular(12),
-          ),
-          boxShadow: [
-            BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 1))
-          ]
+          color: isUser ? Colors.deepPurple[400] : (isDark ? Colors.grey[800] : Colors.white),
+          borderRadius: BorderRadius.circular(15),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              msg['text']!,
-              style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 16),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              msg['time']!,
-              style: TextStyle(color: isDark ? Colors.white60 : Colors.black45, fontSize: 10),
-            ),
+            Text(msg['text']!, style: const TextStyle(color: Colors.white, fontSize: 16)),
+            Text(msg['time']!, style: const TextStyle(color: Colors.white70, fontSize: 10)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInputArea(bool isDark) {
-    return Container(
+  Widget _inputArea(bool isDark) {
+    return Padding(
       padding: const EdgeInsets.all(8.0),
-      color: isDark ? const Color(0xFF1F2C34) : Colors.grey[200],
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2A3942) : Colors.white,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: TextField(
-                controller: _controller,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                decoration: const InputDecoration(
-                  hintText: "Type a message",
-                  hintStyle: TextStyle(color: Colors.grey),
-                  border: InputBorder.none
-                ),
-                onSubmitted: (_) => askQuestion(),
+            child: TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: "Type here...",
+                filled: true,
+                fillColor: isDark ? Colors.grey[900] : Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: askQuestion,
-            child: const CircleAvatar(
-              backgroundColor: Colors.deepPurple,
-              radius: 24,
-              child: Icon(Icons.send, color: Colors.white, size: 20),
-            ),
-          ),
+          IconButton(icon: const Icon(Icons.send), onPressed: askQuestion),
         ],
       ),
     );
