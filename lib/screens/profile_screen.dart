@@ -1,10 +1,12 @@
+import 'dart:io'; // Required for File
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart'; // Import Image Picker
 import '../theme_provider.dart';
 import 'sentiment_screen.dart';
 import 'login_screen.dart';
-import 'about_us_screen.dart'; // Import your new screen here
+import 'about_us_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -16,6 +18,8 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String fullName = "Loading...";
   String email = "Loading...";
+  File? _imageFile; // To store the selected image file
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -28,7 +32,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       fullName = prefs.getString('userName') ?? "User";
       email = prefs.getString('userEmail') ?? "No Email Found";
+      // Note: In a real app, you'd also load the image path from SharedPreferences here
+      String? imagePath = prefs.getString('userImagePath');
+      if (imagePath != null) {
+        _imageFile = File(imagePath);
+      }
     });
+  }
+
+  // Logic to pick the image
+  Future<void> _pickImage() async {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery, // Change to ImageSource.camera for camera
+      imageQuality: 80,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+      // Save the path to SharedPreferences so it persists
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('userImagePath', pickedFile.path);
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -52,7 +78,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: isDark ? Colors.black : Colors.grey.shade100,
       appBar: AppBar(
         title: const Text("Profile", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: isDark ?Colors.deepPurple : Colors.deepPurple,
+        backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
@@ -61,16 +87,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            CircleAvatar(
-              radius: 55,
-              backgroundColor: isDark ? Colors.deepPurple.withOpacity(0.2) : Colors.deepPurple.shade100,
-              child: Icon(Icons.person, size: 70, color: isDark ? Colors.deepPurpleAccent : Colors.deepPurple),
+            // PROFILE PICTURE SECTION
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 65,
+                  backgroundColor: isDark ? Colors.deepPurple.withOpacity(0.3) : Colors.deepPurple.shade100,
+                  backgroundImage: _imageFile != null ? FileImage(_imageFile!) : null,
+                  child: _imageFile == null
+                      ? Icon(Icons.person, size: 80, color: isDark ? Colors.deepPurpleAccent : Colors.deepPurple)
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: isDark ? Colors.black : Colors.white, width: 3),
+                      ),
+                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Text(
               fullName,
               style: TextStyle(
-                fontSize: 24, 
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white : Colors.black,
               ),
@@ -78,7 +128,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(
               email,
               style: TextStyle(
-                fontSize: 16, 
+                fontSize: 16,
                 color: isDark ? Colors.white70 : Colors.grey.shade600,
               ),
             ),
@@ -113,22 +163,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   Divider(height: 1, indent: 20, endIndent: 20, color: isDark ? Colors.white10 : Colors.grey.shade300),
-                  
-                  // --- RESTORED NAVIGATION ---
                   _buildSettingsTile(
                     isDark: isDark,
                     icon: Icons.info_outline,
                     color: Colors.blue,
                     title: "About Us",
                     onTap: () {
-                      // Pushes the full AboutUsScreen onto the navigation stack
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const AboutUsScreen()),
                       );
                     },
                   ),
-                  
                   Divider(height: 1, indent: 20, endIndent: 20, color: isDark ? Colors.white10 : Colors.grey.shade300),
                   _buildSettingsTile(
                     isDark: isDark,
@@ -196,7 +242,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: Text(
         title,
         style: TextStyle(
-          fontSize: 18, 
+          fontSize: 18,
           fontWeight: FontWeight.w500,
           color: isDark ? Colors.white : Colors.black,
         ),
