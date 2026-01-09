@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartproject/screens/upload_lesson.dart';
 import 'login_screen.dart';
+import 'delete.dart';
 
 class HomeAdminsScreen extends StatefulWidget {
   const HomeAdminsScreen({super.key});
@@ -103,14 +104,27 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
                     );
                   },
                 ),
-                _buildAdminCard(context, "Delet lessons", Icons.delete_forever, Colors.orange, () {
-                  // TODO: Add User Management Logic
-                }),
-                _buildAdminCard(context, "Lesson Reports", Icons.bar_chart_rounded, Colors.green, () {
-                  // TODO: Add Reports Logic
+                _buildAdminCard(
+                  context, "Delet lessons",
+                   Icons.delete_forever, 
+                   Colors.orange, () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const UploadLessonScreen()),
+                    );
+                }
+                ),
+                _buildAdminCard(context, "Student feedback", Icons.bar_chart_rounded, Colors.green, () {
+                      Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const UploadLessonScreen()),
+                    );
                 }),
                 _buildAdminCard(context, "Settings", Icons.settings_applications_outlined, Colors.redAccent, () {
-                  // TODO: Add Settings Logic
+                     Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const UploadLessonScreen()),
+                    );
                 }),
               ],
             ),
