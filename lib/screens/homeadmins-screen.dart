@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartproject/screens/upload_lesson.dart';
 import 'login_screen.dart';
 import 'delete.dart';
+import 'sentiment_screen.dart'; // 1. ADDED THIS IMPORT
 
 class HomeAdminsScreen extends StatefulWidget {
   const HomeAdminsScreen({super.key});
@@ -20,7 +21,6 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
     _loadAdminData();
   }
 
-  // Load the name we saved during the admin override login
   Future<void> _loadAdminData() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -28,10 +28,9 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
     });
   }
 
-  // Logout function
   Future<void> _logout() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Clears login session
+    await prefs.clear(); 
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
@@ -61,7 +60,6 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Section
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(25),
@@ -83,7 +81,6 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
             ),
           ),
 
-          // Dashboard Grid
           Expanded(
             child: GridView.count(
               padding: const EdgeInsets.all(20),
@@ -97,7 +94,6 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
                   Icons.cloud_upload_outlined, 
                   Colors.blue, 
                   () {
-                    // Navigate to the Upload Lesson Screen
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const UploadLessonScreen()),
@@ -105,21 +101,29 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
                   },
                 ),
                 _buildAdminCard(
-                  context, "Delet lessons",
+                  context, 
+                  "Delet lessons",
                    Icons.delete_forever, 
                    Colors.orange, () {
                   Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const UploadLessonScreen()),
-                    );
-                }
-                ),
-                _buildAdminCard(context, "Student feedback", Icons.bar_chart_rounded, Colors.green, () {
-                      Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const UploadLessonScreen()),
+                      MaterialPageRoute(builder: (context) => const DeleteLessonScreen()),
                     );
                 }),
+
+                // --- UPDATED: PUSH TO SENTIMENT SCREEN ---
+                _buildAdminCard(
+                  context, 
+                  "Student feedback", 
+                  Icons.insert_emoticon_rounded, // Changed icon for sentiment
+                  Colors.green, 
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SentimentScreen()), // 2. NAVIGATION ADDED
+                    );
+                }),
+
                 _buildAdminCard(context, "Settings", Icons.settings_applications_outlined, Colors.redAccent, () {
                      Navigator.push(
                       context,
