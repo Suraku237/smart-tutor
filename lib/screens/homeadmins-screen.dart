@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // 1. ADD THIS IMPORT
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartproject/screens/upload_lesson.dart';
+import '../theme_provider.dart'; // 2. IMPORT YOUR THEME PROVIDER
 import 'login_screen.dart';
 import 'delete.dart';
-import 'sentiment_screen.dart'; // 1. ADDED THIS IMPORT
+import 'sentiment_screen.dart';
+import 'profile_screen.dart';
 
 class HomeAdminsScreen extends StatefulWidget {
   const HomeAdminsScreen({super.key});
@@ -42,8 +45,13 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 3. LISTEN TO THE THEME
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final bool isDark = themeProvider.isDarkMode;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      // 4. DYNAMIC BACKGROUND COLOR
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey.shade100,
       appBar: AppBar(
         title: const Text("Admin Dashboard", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.deepPurple,
@@ -60,6 +68,7 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header Section
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(25),
@@ -90,45 +99,41 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
               children: [
                 _buildAdminCard(
                   context, 
+                  isDark,
                   "Upload Lesson", 
                   Icons.cloud_upload_outlined, 
                   Colors.blue, 
                   () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const UploadLessonScreen()),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const UploadLessonScreen()));
                   },
                 ),
                 _buildAdminCard(
                   context, 
-                  "Delet lessons",
+                  isDark,
+                  "Delete Lessons",
                    Icons.delete_forever, 
                    Colors.orange, () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const DeleteLessonScreen()),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const DeleteLessonScreen()));
                 }),
 
-                // --- UPDATED: PUSH TO SENTIMENT SCREEN ---
                 _buildAdminCard(
                   context, 
+                  isDark,
                   "Student feedback", 
-                  Icons.insert_emoticon_rounded, // Changed icon for sentiment
+                  Icons.insert_emoticon_rounded, 
                   Colors.green, 
                   () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SentimentScreen()), // 2. NAVIGATION ADDED
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const SentimentScreen()));
                 }),
 
-                _buildAdminCard(context, "Settings", Icons.settings_applications_outlined, Colors.redAccent, () {
-                     Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const UploadLessonScreen()),
-                    );
+                _buildAdminCard(
+                  context, 
+                  isDark,
+                  "Settings", 
+                  Icons.settings_applications_outlined, 
+                  Colors.redAccent, 
+                  () {
+                     Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
                 }),
               ],
             ),
@@ -138,11 +143,18 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
     );
   }
 
-  Widget _buildAdminCard(BuildContext context, String title, IconData icon, Color color, VoidCallback onTap) {
+  // 5. UPDATED CARD WIDGET TO SUPPORT DARK MODE
+  Widget _buildAdminCard(BuildContext context, bool isDark, String title, IconData icon, Color color, VoidCallback onTap) {
     return Material(
-      color: Colors.white,
+      // Dynamic card background
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       borderRadius: BorderRadius.circular(20),
-      elevation: 2,
+      elevation: isDark ? 0 : 2,
+      // Add a subtle border in dark mode for better visibility
+      shape: isDark ? RoundedRectangleBorder(
+        side: BorderSide(color: Colors.white.withOpacity(0.05)),
+        borderRadius: BorderRadius.circular(20),
+      ) : null,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
@@ -154,7 +166,7 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 30, color: color),
@@ -163,7 +175,12 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 14,
+                  // Dynamic text color
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
               ),
             ],
           ),
