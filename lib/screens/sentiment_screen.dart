@@ -161,7 +161,7 @@ class _SentimentScreenState extends State<SentimentScreen> {
               style: TextStyle(fontSize: 10, color: isDark ? Colors.grey[400] : Colors.grey[700]),
             ),
           ),
-          Container(
+            Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             margin: const EdgeInsets.only(bottom: 8),
             constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),

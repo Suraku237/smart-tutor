@@ -27,7 +27,7 @@ class AboutUsScreen extends StatelessWidget {
             _buildSectionTitle("The Developers", isDark),
             const SizedBox(height: 15),
             _buildDevTile(
-              name: "Developer One",
+              name: "kwete junior",
               role: "Full-Stack & DevOps Engineer",
               contribution: "Architected the FastAPI backend, managed the VPS deployment, and integrated the MySQL database and AI processing logic.",
               icon: Icons.storage_rounded,
@@ -35,7 +35,7 @@ class AboutUsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 15),
             _buildDevTile(
-              name: "Developer Two",
+              name: "chijioke emmanuel",
               role: "Lead Mobile Developer",
               contribution: "Designed the Flutter UI/UX, implemented Theme Management, and developed the PDF rendering and client-side API integration.",
               icon: Icons.phone_android_rounded,
