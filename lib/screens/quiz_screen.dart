@@ -1,140 +1,144 @@
-import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import '../models/quiz.dart';
-import '../widgets/progress_bar.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import '../theme_provider.dart';
 
 class QuizScreen extends StatefulWidget {
-  final String lessonId;
-  final String subjectId; // Make sure you're passing this
+  final String subjectId; // e.g., 'physics'
+  final String lessonId;  // The ID used to find the specific quiz
 
   const QuizScreen({
-    super.key, 
-    required this.lessonId, 
-    required this.subjectId, // Add this parameter
+    super.key,
+    required this.subjectId,
+    required this.lessonId,
   });
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _QuizScreenState extends State<QuizScreen>
-    with SingleTickerProviderStateMixin {
-
-  List<Quiz> quizzes = [];
-  int currentIndex = 0;
-  int score = 0;
-
-  // TIMER
-  int timeLeft = 15;
-  Timer? countdownTimer;
-  bool timeUp = false;
-
-  // ANIMATION CONTROLLERS
-  late AnimationController controller;
-  late Animation<double> fadeAnimation;
-  late Animation<Offset> slideAnimation;
+class _QuizScreenState extends State<QuizScreen> {
+  String? _localPath;
+  bool _isLoading = true;
+  String _errorMessage = "";
+  int _totalPages = 0;
+  int _currentPage = 0;
+  bool _pdfReady = false;
 
   @override
   void initState() {
     super.initState();
-
-    // FIX: Use the correct method to get quizzes
-    // Option 1: Use getQuizzesByLesson (if it's working)
-    //quizzes = DummyData.getQuizzesByLesson(widget.lessonId);
-    
-    // Debug print to check if quizzes are loaded
-    print("Quizzes loaded: ${quizzes.length}");
-    print("Lesson ID: ${widget.lessonId}");
-    print("Subject ID: ${widget.subjectId}");
-
-    // Check if quizzes are empty before proceeding
-    if (quizzes.isEmpty) {
-      print("ERROR: No quizzes found for ${widget.lessonId}");
-      // You might want to show an error message or navigate back
-    }
-
-    controller = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-
-    fadeAnimation = Tween<double>(begin: 0, end: 1)
-        .animate(CurvedAnimation(parent: controller, curve: Curves.easeIn));
-
-    slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
-
-    //startTimer();
-    controller.forward();
+    _fetchAndDownloadQuiz();
   }
 
-  // ... rest of your code ...
+  // --- LOGIC TO FETCH PDF FROM YOUR VPS ---
+  Future<void> _fetchAndDownloadQuiz() async {
+    try {
+      // Construction of the URL based on your VPS structure
+      // Example: http://109.199.120.38:8001/get_quiz/physics/lesson_id
+      final String url = "http://109.199.120.38:8001/get_quiz/${widget.subjectId}/${widget.lessonId}";
+      
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final dir = await getTemporaryDirectory();
+        final file = File("${dir.path}/quiz_${widget.lessonId}.pdf");
+        await file.writeAsBytes(response.bodyBytes);
+
+        if (mounted) {
+          setState(() {
+            _localPath = file.path;
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _errorMessage = "No quiz found for this lesson.";
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = "Connection error: Unable to reach server.";
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // CHECK if quizzes is empty before accessing it
-    if (quizzes.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text("Quiz"),
-          centerTitle: true,
-          backgroundColor: Colors.deepPurple,
-        ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 60,
-                  color: Colors.red,
-                ),
-                SizedBox(height: 20),
-                Text(
-                  "No quizzes available for this subject.",
-                  style: TextStyle(fontSize: 18),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text("Go Back"),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Only access currentQuiz if quizzes is not empty
+    final theme = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
+      backgroundColor: theme.isDarkMode ? Colors.black : Colors.grey[100],
       appBar: AppBar(
-        title: const Text("Quiz"),
-        centerTitle: true,
+        title: Text("${widget.subjectId.toUpperCase()} Quiz"),
         backgroundColor: Colors.deepPurple,
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // PROGRESS BAR
-            ProgressBar(
-              currentIndex: currentIndex,
-              totalQuestions: quizzes.length,
+      body: Stack(
+        children: [
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator(color: Colors.deepPurple))
+          else if (_errorMessage.isNotEmpty)
+            _buildErrorState()
+          else
+            PDFView(
+              filePath: _localPath,
+              enableSwipe: true,
+              swipeHorizontal: false,
+              autoSpacing: true,
+              pageFling: true,
+              onRender: (pages) => setState(() {
+                _totalPages = pages!;
+                _pdfReady = true;
+              }),
+              onPageChanged: (page, total) => setState(() {
+                _currentPage = page!;
+              }),
+              onError: (error) => setState(() => _errorMessage = error.toString()),
             ),
-            
-            // ... rest of your quiz UI code ...
-          ],
-        ),
+
+          // Floating Page Indicator
+          if (_pdfReady && _errorMessage.isEmpty)
+            Positioned(
+              bottom: 20,
+              right: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Text(
+                  "Page ${_currentPage + 1} / $_totalPages",
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.quiz_outlined, size: 60, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(_errorMessage, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+            child: const Text("Go Back", style: TextStyle(color: Colors.white)),
+          )
+        ],
       ),
     );
   }

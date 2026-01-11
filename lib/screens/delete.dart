@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Import Provider
+import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../theme_provider.dart'; // Import your ThemeProvider
+import '../theme_provider.dart';
 
 class DeleteLessonScreen extends StatefulWidget {
   const DeleteLessonScreen({super.key});
@@ -46,7 +46,7 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
         setState(() {
           lessons.removeAt(index);
         });
-        _showSnackBar("Lesson permanently removed", Colors.green);
+        _showSnackBar("Lesson and associated quiz removed", Colors.green);
       } else {
         _showSnackBar("Failed to delete from server", Colors.red);
       }
@@ -69,12 +69,10 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Listen to the ThemeProvider
     final themeProvider = Provider.of<ThemeProvider>(context);
     final bool isDark = themeProvider.isDarkMode;
 
     return Scaffold(
-      // 2. Set dynamic background color
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey[100],
       body: RefreshIndicator(
         onRefresh: _fetchLessons,
@@ -83,12 +81,11 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
           slivers: [
             SliverAppBar(
               expandedHeight: 120.0,
-              floating: false,
               pinned: true,
               backgroundColor: Colors.deepPurple,
               foregroundColor: Colors.white,
               flexibleSpace: FlexibleSpaceBar(
-                title: const Text("Manage Lessons", 
+                title: const Text("Manage Content", 
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
                 background: Container(color: Colors.deepPurple),
               ),
@@ -119,10 +116,12 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
   }
 
   Widget _buildLessonCard(dynamic lesson, int index, bool isDark) {
+    // Check if a quiz exists for this lesson
+    bool hasQuiz = lesson['quiz_file'] != null;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        // 3. Dynamic card color
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
@@ -132,26 +131,50 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
         border: isDark ? Border.all(color: Colors.white10, width: 1) : null,
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 28),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Stack(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 28),
+            ),
+            if (hasQuiz)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+                  child: const Icon(Icons.quiz, color: Colors.white, size: 12),
+                ),
+              ),
+          ],
         ),
         title: Text(
           lesson['title'] ?? 'Untitled',
           style: TextStyle(
             fontWeight: FontWeight.bold, 
             fontSize: 16,
-            color: isDark ? Colors.white : Colors.black87, // Dynamic text color
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
-        subtitle: Text(
-          "Category: ${lesson['category'] ?? 'N/A'}",
-          style: TextStyle(color: isDark ? Colors.white60 : Colors.grey[600]), // Dynamic subtitle color
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Category: ${lesson['category'] ?? 'N/A'}",
+              style: TextStyle(color: isDark ? Colors.white60 : Colors.grey[600]),
+            ),
+            if (hasQuiz)
+              const Text(
+                "✓ Quiz attached",
+                style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+          ],
         ),
         trailing: IconButton(
           icon: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent, size: 28),
@@ -172,7 +195,7 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
               color: isDark ? Colors.white24 : Colors.grey[400]
             ),
             const SizedBox(height: 16),
-            Text("No lessons found.", 
+            Text("No content found.", 
               style: TextStyle(
                 fontSize: 18, 
                 color: isDark ? Colors.white38 : Colors.grey
@@ -188,14 +211,13 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        // 4. Dynamic dialog background
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text("Permanent Delete?", 
+        title: Text("Delete Content?", 
           style: TextStyle(color: isDark ? Colors.white : Colors.black87)
         ),
         content: Text(
-          "Are you sure you want to delete '$title'? This will remove the file from the server.",
+          "Warning: Deleting '$title' will also permanently delete its associated Quiz PDF from the server folders.",
           style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
         ),
         actions: [
@@ -212,7 +234,7 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
               Navigator.pop(context);
               _deleteLesson(id, index);
             },
-            child: const Text("Delete", style: TextStyle(color: Colors.white)),
+            child: const Text("Delete Everything", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
