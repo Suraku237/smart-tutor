@@ -61,19 +61,17 @@ class _UploadLessonScreenState extends State<UploadLessonScreen> {
       request.fields['title'] = title;
       request.fields['category'] = _selectedCategory;
 
-      // Add Lesson PDF
       request.files.add(await http.MultipartFile.fromPath(
         'file', 
         _lessonFile!.path,
-        filename: "$title.pdf", // Simplified to match backend storage logic
+        filename: "$title.pdf",
       ));
 
-      // Add Quiz PDF (if selected)
       if (_quizFile != null) {
         request.files.add(await http.MultipartFile.fromPath(
           'quiz_file', 
           _quizFile!.path,
-          filename: "quiz_$title.pdf", // Matching the prefix expected by backend
+          filename: "quiz_$title.pdf",
         ));
       }
 
@@ -81,8 +79,10 @@ class _UploadLessonScreenState extends State<UploadLessonScreen> {
       var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
-        _showSnackBar("Content Uploaded Successfully!", Colors.green);
-        if (mounted) Navigator.pop(context);
+        if (mounted) {
+          _showSnackBar("Content Uploaded Successfully!", Colors.green);
+          Navigator.pop(context);
+        }
       } else {
         _showSnackBar("Upload Failed: ${response.statusCode}", Colors.red);
       }
@@ -94,6 +94,7 @@ class _UploadLessonScreenState extends State<UploadLessonScreen> {
   }
 
   void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: color),
     );
@@ -118,16 +119,21 @@ class _UploadLessonScreenState extends State<UploadLessonScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildSectionTitle("General Information", isDark),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             TextField(
               controller: _titleController,
               style: TextStyle(color: isDark ? Colors.white : Colors.black),
               decoration: InputDecoration(
                 labelText: "Lesson Title",
                 hintText: "e.g. Algebra Basics",
+                hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
                 filled: true,
                 fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade300),
+                ),
               ),
             ),
             const SizedBox(height: 15),
@@ -140,6 +146,10 @@ class _UploadLessonScreenState extends State<UploadLessonScreen> {
                 filled: true,
                 fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade300),
+                ),
               ),
               items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
               onChanged: (val) => setState(() => _selectedCategory = val!),
@@ -147,7 +157,7 @@ class _UploadLessonScreenState extends State<UploadLessonScreen> {
             const SizedBox(height: 30),
             
             _buildSectionTitle("Files", isDark),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             _buildFileTile("Lesson PDF (Required)", _lessonFile, _pickLessonFile, isDark, Colors.red, true),
             const SizedBox(height: 15),
             _buildFileTile("Quiz PDF (Optional)", _quizFile, _pickQuizFile, isDark, Colors.orange, false),
@@ -162,10 +172,11 @@ class _UploadLessonScreenState extends State<UploadLessonScreen> {
                       padding: const EdgeInsets.all(18),
                       backgroundColor: Colors.deepPurple,
                       foregroundColor: Colors.white,
+                      elevation: 2,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: _upload,
-                    label: const Text("SAVE TO SYSTEM", style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: const Text("SAVE TO SYSTEM", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
           ],
         ),
@@ -177,9 +188,10 @@ class _UploadLessonScreenState extends State<UploadLessonScreen> {
     return Text(
       title,
       style: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: isDark ? Colors.white70 : Colors.black54,
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.1,
+        color: isDark ? Colors.deepPurpleAccent : Colors.deepPurple,
       ),
     );
   }
@@ -189,31 +201,44 @@ class _UploadLessonScreenState extends State<UploadLessonScreen> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
+        // FIXED: Explicitly removed 'shape' here to prevent crash with borderRadius
         border: Border.all(
-          color: (isRequired && file == null) ? Colors.red.withOpacity(0.3) : (isDark ? Colors.white12 : Colors.grey.shade300)
+          color: (isRequired && file == null) ? Colors.red.withOpacity(0.5) : (isDark ? Colors.white12 : Colors.grey.shade300),
+          width: (isRequired && file == null) ? 1.5 : 1,
         ),
       ),
       child: ListTile(
-        leading: Icon(file == null ? Icons.picture_as_pdf_outlined : Icons.picture_as_pdf, color: iconColor),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(file == null ? Icons.picture_as_pdf_outlined : Icons.picture_as_pdf, color: iconColor),
+        ),
         title: Text(
           file == null ? label : file.path.split(Platform.pathSeparator).last,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 14),
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black87, 
+            fontSize: 14,
+            fontWeight: file == null ? FontWeight.normal : FontWeight.w500,
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (file != null) 
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.grey),
+                icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
                 onPressed: () => setState(() {
                   if (label.contains("Lesson")) _lessonFile = null; else _quizFile = null;
                 }),
               ),
             TextButton(
               onPressed: onPick,
-              child: Text(file == null ? "Select" : "Change"),
+              child: Text(file == null ? "Select" : "Change", style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),

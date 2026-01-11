@@ -23,19 +23,24 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
   }
 
   Future<void> _fetchLessons() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
     try {
       final response = await http.get(Uri.parse('$apiUrl/get_lessons'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        setState(() {
-          lessons = data['lessons'] ?? [];
-          isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            lessons = data['lessons'] ?? [];
+            isLoading = false;
+          });
+        }
       }
     } catch (e) {
-      _showSnackBar("Connection error: $e", Colors.red);
-      setState(() => isLoading = false);
+      if (mounted) {
+        _showSnackBar("Connection error: $e", Colors.red);
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -43,10 +48,12 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
     try {
       final response = await http.delete(Uri.parse('$apiUrl/delete-lesson/$lessonId'));
       if (response.statusCode == 200) {
-        setState(() {
-          lessons.removeAt(index);
-        });
-        _showSnackBar("Lesson and associated quiz removed", Colors.green);
+        if (mounted) {
+          setState(() {
+            lessons.removeAt(index);
+          });
+          _showSnackBar("Lesson and associated quiz removed", Colors.green);
+        }
       } else {
         _showSnackBar("Failed to delete from server", Colors.red);
       }
@@ -101,10 +108,7 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
                       padding: const EdgeInsets.all(15),
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final lesson = lessons[index];
-                            return _buildLessonCard(lesson, index, isDark);
-                          },
+                          (context, index) => _buildLessonCard(lessons[index], index, isDark),
                           childCount: lessons.length,
                         ),
                       ),
@@ -116,12 +120,12 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
   }
 
   Widget _buildLessonCard(dynamic lesson, int index, bool isDark) {
-    // Check if a quiz exists for this lesson
     bool hasQuiz = lesson['quiz_file'] != null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
+        // FIX: Removed shape property to prevent crash
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
@@ -133,6 +137,7 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Stack(
+          clipBehavior: Clip.none,
           children: [
             Container(
               padding: const EdgeInsets.all(10),
@@ -144,12 +149,15 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
             ),
             if (hasQuiz)
               Positioned(
-                right: 0,
-                top: 0,
+                right: -4,
+                top: -4,
                 child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
-                  child: const Icon(Icons.quiz, color: Colors.white, size: 12),
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.orange, 
+                    shape: BoxShape.circle, // This is okay because borderRadius is NOT present here
+                  ),
+                  child: const Icon(Icons.quiz, color: Colors.white, size: 10),
                 ),
               ),
           ],
@@ -162,19 +170,22 @@ class _DeleteLessonScreenState extends State<DeleteLessonScreen> {
             color: isDark ? Colors.white : Colors.black87,
           ),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Category: ${lesson['category'] ?? 'N/A'}",
-              style: TextStyle(color: isDark ? Colors.white60 : Colors.grey[600]),
-            ),
-            if (hasQuiz)
-              const Text(
-                "✓ Quiz attached",
-                style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Category: ${lesson['category'] ?? 'N/A'}",
+                style: TextStyle(color: isDark ? Colors.white60 : Colors.grey[600]),
               ),
-          ],
+              if (hasQuiz)
+                const Text(
+                  "✓ Quiz attached",
+                  style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+            ],
+          ),
         ),
         trailing: IconButton(
           icon: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent, size: 28),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // 1. ADD THIS IMPORT
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smartproject/screens/upload_lesson.dart';
-import '../theme_provider.dart'; // 2. IMPORT YOUR THEME PROVIDER
+import '../theme_provider.dart';
 import 'login_screen.dart';
 import 'delete.dart';
 import 'sentiment_screen.dart';
@@ -26,9 +26,11 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
 
   Future<void> _loadAdminData() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      adminName = prefs.getString('userName') ?? "Admin";
-    });
+    if (mounted) {
+      setState(() {
+        adminName = prefs.getString('userName') ?? "Admin";
+      });
+    }
   }
 
   Future<void> _logout() async {
@@ -45,12 +47,10 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 3. LISTEN TO THE THEME
     final themeProvider = Provider.of<ThemeProvider>(context);
     final bool isDark = themeProvider.isDarkMode;
 
     return Scaffold(
-      // 4. DYNAMIC BACKGROUND COLOR
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey.shade100,
       appBar: AppBar(
         title: const Text("Admin Dashboard", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -82,10 +82,13 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Welcome back,", style: TextStyle(color: Colors.deepPurple.shade100, fontSize: 16)),
-                Text(adminName, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
+                Text("Welcome back,", 
+                  style: TextStyle(color: Colors.deepPurple.shade100, fontSize: 16)),
+                Text(adminName, 
+                  style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
-                const Text("What would you like to manage today?", style: TextStyle(color: Colors.white70)),
+                const Text("What would you like to manage today?", 
+                  style: TextStyle(color: Colors.white70)),
               ],
             ),
           ),
@@ -103,38 +106,32 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
                   "Upload Lesson", 
                   Icons.cloud_upload_outlined, 
                   Colors.blue, 
-                  () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const UploadLessonScreen()));
-                  },
+                  () => Navigator.push(context, MaterialPageRoute(builder: (context) => const UploadLessonScreen())),
                 ),
                 _buildAdminCard(
                   context, 
                   isDark,
                   "Delete Lessons",
-                   Icons.delete_forever, 
-                   Colors.orange, () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const DeleteLessonScreen()));
-                }),
-
+                  Icons.delete_forever, 
+                  Colors.orange, 
+                  () => Navigator.push(context, MaterialPageRoute(builder: (context) => const DeleteLessonScreen())),
+                ),
                 _buildAdminCard(
                   context, 
                   isDark,
-                  "Student feedback", 
+                  "Student Feedback", 
                   Icons.insert_emoticon_rounded, 
                   Colors.green, 
-                  () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const SentimentScreen()));
-                }),
-
+                  () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SentimentScreen())),
+                ),
                 _buildAdminCard(
                   context, 
                   isDark,
                   "Settings", 
                   Icons.settings_applications_outlined, 
                   Colors.redAccent, 
-                  () {
-                     Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
-                }),
+                  () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())),
+                ),
               ],
             ),
           ),
@@ -143,46 +140,55 @@ class _HomeAdminsScreenState extends State<HomeAdminsScreen> {
     );
   }
 
-  // 5. UPDATED CARD WIDGET TO SUPPORT DARK MODE
   Widget _buildAdminCard(BuildContext context, bool isDark, String title, IconData icon, Color color, VoidCallback onTap) {
-    return Material(
-      // Dynamic card background
-      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      elevation: isDark ? 0 : 2,
-      // Add a subtle border in dark mode for better visibility
-      shape: isDark ? RoundedRectangleBorder(
-        side: BorderSide(color: Colors.white.withOpacity(0.05)),
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-      ) : null,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  shape: BoxShape.circle,
+        // Adding a subtle border for dark mode depth without using the 'shape' property
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.transparent,
+          width: 1,
+        ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent, // Material is now just for the ripple effect
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 30, color: color),
                 ),
-                child: Icon(icon, size: 30, color: color),
-              ),
-              const SizedBox(height: 15),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold, 
-                  fontSize: 14,
-                  // Dynamic text color
-                  color: isDark ? Colors.white : Colors.black87,
+                const SizedBox(height: 15),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 14,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
