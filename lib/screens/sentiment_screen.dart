@@ -69,7 +69,6 @@ class _SentimentScreenState extends State<SentimentScreen> {
             );
             // Reverse history because backend sends DESC (newest first) 
             // but Chat UI usually needs oldest first at top
-            qaHistory = qaHistory.reversed.toList();
           });
           _scrollToBottom();
         }

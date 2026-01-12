@@ -1,12 +1,14 @@
-import 'dart:io'; // Required for File
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:image_picker/image_picker.dart'; // Import Image Picker
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../theme_provider.dart';
 import 'sentiment_screen.dart';
 import 'login_screen.dart';
 import 'about_us_screen.dart';
+import 'database_helper.dart'; // Ensure this helper exists as we created earlier
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,7 +20,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String fullName = "Loading...";
   String email = "Loading...";
-  File? _imageFile; // To store the selected image file
+  File? _imageFile; 
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -27,39 +29,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserData();
   }
 
+  // UPDATED: Load user data from SharedPreferences and Image from Local Database
   Future<void> _loadUserData() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      fullName = prefs.getString('userName') ?? "User";
-      email = prefs.getString('userEmail') ?? "No Email Found";
-      // Note: In a real app, you'd also load the image path from SharedPreferences here
-      String? imagePath = prefs.getString('userImagePath');
-      if (imagePath != null) {
-        _imageFile = File(imagePath);
-      }
-    });
+    
+    // 1. Get Text Data
+    String name = prefs.getString('userName') ?? "User";
+    String userEmail = prefs.getString('userEmail') ?? "No Email Found";
+
+    // 2. Get Image Path from Local SQLite Database
+    String? localPath = await LocalDatabaseHelper.instance.getImagePath();
+    
+    if (mounted) {
+      setState(() {
+        fullName = name;
+        email = userEmail;
+        if (localPath != null) {
+          _imageFile = File(localPath);
+        }
+      });
+    }
   }
 
-  // Logic to pick the image
+  // UPDATED: Logic to pick, copy to permanent storage, and save to SQLite
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(
-      source: ImageSource.gallery, // Change to ImageSource.camera for camera
+      source: ImageSource.gallery,
       imageQuality: 80,
     );
 
     if (pickedFile != null) {
+      // 1. Get the app's internal permanent directory
+      final directory = await getApplicationDocumentsDirectory();
+      
+      // 2. Create a unique name for the file to avoid cache issues
+      final String fileName = "profile_${DateTime.now().millisecondsSinceEpoch}.png";
+      final String savedPath = '${directory.path}/$fileName';
+
+      // 3. Physically copy the file from temporary to permanent storage
+      final File localImage = await File(pickedFile.path).copy(savedPath);
+
+      // 4. Save the new path into the Local SQLite Database
+      await LocalDatabaseHelper.instance.saveImagePath(savedPath);
+
       setState(() {
-        _imageFile = File(pickedFile.path);
+        _imageFile = localImage;
       });
-      // Save the path to SharedPreferences so it persists
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userImagePath', pickedFile.path);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Profile picture updated locally")),
+        );
+      }
     }
   }
 
   Future<void> _handleLogout() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+    // Note: We usually keep the local profile pic even after logout 
+    // unless you want to clear the database too.
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
@@ -134,6 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 30),
 
+            // SETTINGS SECTION
             Container(
               decoration: BoxDecoration(
                 color: isDark ? Colors.grey[900] : Colors.white,
@@ -180,7 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     isDark: isDark,
                     icon: Icons.feedback_outlined,
                     color: Colors.redAccent,
-                    title: "Feedback",
+                    title: "Community Chat", // Updated label
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const SentimentScreen()));
                     },
@@ -196,24 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 35),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.edit, size: 24, color: Colors.white),
-                label: const Text("Edit Profile"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
           ],
         ),
       ),

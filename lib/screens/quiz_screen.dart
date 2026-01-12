@@ -9,11 +9,13 @@ import '../theme_provider.dart';
 class QuizScreen extends StatefulWidget {
   final String subjectId;
   final String lessonTitle; // This must match the title used during Admin upload
+  final String category; // <--- Add this
 
   const QuizScreen({
     super.key,
     required this.subjectId,
     required this.lessonTitle,
+    required this.category, // <--- Add this
   });
 
   @override
@@ -36,11 +38,14 @@ class _QuizScreenState extends State<QuizScreen> {
   Future<void> _downloadAndShowPdf() async {
     try {
       // Construction matches your Admin logic: quiz_TitleName.pdf
-      final String fileName = "quiz_${widget.lessonTitle}.pdf";
-      final String url = "http://109.199.120.38:8001/download/quizzes/${Uri.encodeComponent(fileName)}";
+    final String fileName = "quiz_${widget.lessonTitle}.pdf";
+    
+    // We point to the STATIC mount you created: /quizzes/Category/FileName
+    final String url = "http://109.199.120.38:8001/quizzes/${Uri.encodeComponent(widget.category)}/${Uri.encodeComponent(fileName)}";
 
-      final response = await http.get(Uri.parse(url));
+    print("📡 Fetching Quiz from: $url"); // Debug print
 
+    final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final dir = await getTemporaryDirectory();
         // Create a unique path to avoid showing the wrong quiz from cache

@@ -227,6 +227,7 @@ class _LessonScreenState extends State<LessonScreen> {
               builder: (_) => QuizScreen(
                 subjectId: widget.subjectId,
                 lessonTitle: lesson.title, // Passes the title for the "quiz_$title.pdf" filename
+                category: lesson.category, // Passes the category for correct URL path
               ),
             ),
           );
