@@ -6,7 +6,7 @@ import '../models/lesson.dart';
 import '../services/ai_service.dart';
 import '../theme_provider.dart';
 import 'quiz_screen.dart';
-import 'lesson_page.dart'; // ADDED: Import to allow navigation to detail page
+import 'lesson_page.dart';
 
 class LessonScreen extends StatefulWidget {
   final String subjectId;
@@ -21,27 +21,26 @@ class _LessonScreenState extends State<LessonScreen> {
   bool _isLoadingAI = false;
   String _aiResponse = "";
   late Future<List<Lesson>> _lessonsFuture;
+  String _searchQuery = ""; // Added for filtering
 
   @override
   void initState() {
     super.initState();
-    _refreshLessons(); // Initial fetch
+    _refreshLessons();
   }
 
-  // Fetches data from VPS and maps it to Lesson models
   Future<List<Lesson>> _fetchLessonsFromVPS() async {
     try {
       final response = await Dio().get("http://109.199.120.38:8001/get_lessons");
       if (response.data['success']) {
         List data = response.data['lessons'];
-        
         return data
             .map((json) => Lesson.fromJson(json))
             .where((lesson) => lesson.category.toLowerCase() == widget.subjectId.toLowerCase())
             .toList();
       }
     } catch (e) {
-      print("Error: $e");
+      debugPrint("Error fetching lessons: $e");
     }
     return [];
   }
@@ -90,15 +89,35 @@ class _LessonScreenState extends State<LessonScreen> {
               return const Center(child: CircularProgressIndicator());
             }
 
-            final lessons = snapshot.data ?? [];
+            // Filter lessons based on search query
+            final allLessons = snapshot.data ?? [];
+            final lessons = allLessons.where((l) => 
+                l.title.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
 
             return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(), // Important for RefreshIndicator
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildAICard(themeProvider),
+                  const SizedBox(height: 20),
+                  
+                  // --- SEARCH BAR ---
+                  TextField(
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                    decoration: InputDecoration(
+                      hintText: "Search papers...",
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: themeProvider.isDarkMode ? Colors.grey[900] : Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  
                   const SizedBox(height: 25),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -113,7 +132,6 @@ class _LessonScreenState extends State<LessonScreen> {
                   ),
                   const SizedBox(height: 15),
 
-                  // --- DYNAMIC LIST OF PAPERS ---
                   lessons.isEmpty
                       ? _buildEmptyState(themeProvider.isDarkMode)
                       : ListView.builder(
@@ -127,7 +145,8 @@ class _LessonScreenState extends State<LessonScreen> {
                         ),
 
                   const SizedBox(height: 20),
-                  if (lessons.isNotEmpty) _buildStartQuizButton(lessons),
+                  // Start Quiz button now handles the logic for the specific lesson
+                  if (lessons.isNotEmpty) _buildStartQuizButton(lessons[0]),
                   const SizedBox(height: 80),
                 ],
               ),
@@ -145,23 +164,6 @@ class _LessonScreenState extends State<LessonScreen> {
     );
   }
 
-  Widget _buildEmptyState(bool isDark) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
-        child: Column(
-          children: [
-            Icon(Icons.folder_open, size: 50, color: Colors.grey[400]),
-            const SizedBox(height: 10),
-            Text("No PDF materials found yet.",
-                style: TextStyle(color: Colors.grey[600])),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- UPDATED WIDGET: NOW PUSHES TO LESSON PAGE ---
   Widget _buildLessonPaperTile(Lesson lesson, int index, ThemeProvider theme) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -187,29 +189,24 @@ class _LessonScreenState extends State<LessonScreen> {
         ),
         title: Text(lesson.title,
             style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                _buildStatusChip("Approved", Colors.green),
-                const SizedBox(width: 8),
-                _buildStatusChip("Exam Prep", Colors.orange),
-              ],
-            ),
-          ],
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: Row(
+            children: [
+              _buildStatusChip("Approved", Colors.green),
+              const SizedBox(width: 8),
+              _buildStatusChip("Exam Prep", Colors.orange),
+            ],
+          ),
         ),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-        
-        // --- NAVIGATION LOGIC UPDATED ---
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => LessonPage(
-                subjectId: widget.subjectId, // Passing e.g. 'physics'
-                title: lesson.title,         // Passing the paper name
+                subjectId: widget.subjectId,
+                title: lesson.title,
               ),
             ),
           );
@@ -218,9 +215,8 @@ class _LessonScreenState extends State<LessonScreen> {
     );
   }
 
-  // ... (Other widgets like _buildAICard, _buildStatusChip, etc. stay the same)
-
-  Widget _buildStartQuizButton(List<Lesson> lessons) {
+  // --- UPDATED NAVIGATION: Matches Admin Upload Title ---
+  Widget _buildStartQuizButton(Lesson lesson) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -230,7 +226,7 @@ class _LessonScreenState extends State<LessonScreen> {
             MaterialPageRoute(
               builder: (_) => QuizScreen(
                 subjectId: widget.subjectId,
-                lessonId: lessons.isNotEmpty ? lessons[0].id : '',
+                lessonTitle: lesson.title, // Passes the title for the "quiz_$title.pdf" filename
               ),
             ),
           );
@@ -241,9 +237,10 @@ class _LessonScreenState extends State<LessonScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 4,
         ),
-        child: const Text(
-          "Master This Topic (Start Quiz)",
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        child: Text(
+          "Quiz for ${lesson.title}",
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -268,6 +265,8 @@ class _LessonScreenState extends State<LessonScreen> {
                 data: _aiResponse,
                 styleSheet: MarkdownStyleSheet(
                   p: TextStyle(fontSize: 15, color: theme.isDarkMode ? Colors.white : Colors.black87),
+                  h1: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold),
+                  listBullet: TextStyle(color: Colors.deepPurple),
                 ),
               ),
           ],
@@ -284,6 +283,22 @@ class _LessonScreenState extends State<LessonScreen> {
           borderRadius: BorderRadius.circular(6)),
       child: Text(label,
           style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildEmptyState(bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Column(
+          children: [
+            Icon(Icons.folder_open, size: 50, color: Colors.grey[400]),
+            const SizedBox(height: 10),
+            Text("No materials match your search.",
+                style: TextStyle(color: Colors.grey[600])),
+          ],
+        ),
+      ),
     );
   }
 }
