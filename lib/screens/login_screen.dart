@@ -21,6 +21,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   bool obscurePassword = true;
 
+// ... imports stay the same
+
   Future<void> loginUser() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -36,9 +38,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (isAdmin1 || isAdmin2) {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
+        
+        // ADDED: Save login timestamp
+        await prefs.setString('login_timestamp', DateTime.now().toIso8601String());
+        
         await prefs.setBool('isLoggedIn', true);
         await prefs.setString('userRole', 'admin');
         await prefs.setString('userName', isAdmin1 ? "Kwete Junior" : "Chijioke");
+        await prefs.setString('user email', isAdmin1 ? "K@gmail.com" : "Chijioke@gmail.com");
 
         if (mounted) {
           _showSnackBar("Admin Access Granted", Colors.blue.shade700);
@@ -47,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
             MaterialPageRoute(builder: (_) => const HomeAdminsScreen()),
           );
         }
-        return; // Exit early so it doesn't call the standard API
+        return; 
       }
       // --- END ADMIN REDIRECT ---
 
@@ -61,12 +68,16 @@ class _LoginScreenState extends State<LoginScreen> {
           "email": email,
           "password": password,
         }),
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 5));
 
       final data = json.decode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
+        
+        // ADDED: Save login timestamp for students
+        await prefs.setString('login_timestamp', DateTime.now().toIso8601String());
+
         await prefs.setBool('isLoggedIn', true);
         await prefs.setString('userRole', 'student');
         await prefs.setString('userName', data['user']?['fullname'] ?? "User");
@@ -89,6 +100,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) setState(() => isLoading = false);
     }
   }
+
+// ... rest of the file stays the same}
 
   void _showSnackBar(String message, Color color) {
     if (!mounted) return;
