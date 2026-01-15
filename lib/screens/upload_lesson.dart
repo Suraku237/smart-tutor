@@ -138,7 +138,7 @@ class _UploadLessonScreenState extends State<UploadLessonScreen> {
             ),
             const SizedBox(height: 15),
             DropdownButtonFormField<String>(
-              value: _selectedCategory,
+              initialValue: _selectedCategory,
               dropdownColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
               style: TextStyle(color: isDark ? Colors.white : Colors.black),
               decoration: InputDecoration(
@@ -233,7 +233,11 @@ class _UploadLessonScreenState extends State<UploadLessonScreen> {
               IconButton(
                 icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
                 onPressed: () => setState(() {
-                  if (label.contains("Lesson")) _lessonFile = null; else _quizFile = null;
+                  if (label.contains("Lesson")) {
+                    _lessonFile = null;
+                  } else {
+                    _quizFile = null;
+                  }
                 }),
               ),
             TextButton(
