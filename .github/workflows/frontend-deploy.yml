@@ -5,7 +5,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build-android:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code
@@ -27,12 +27,24 @@ jobs:
         run: flutter pub get
 
       - name: 🛠️ Build Android APK
-        # This creates the actual app file
+        # This compiles your code into the installable .apk file
         run: flutter build apk --release
 
       - name: 📤 Upload APK Artifact
-        # This saves the file on GitHub so you can download it
+        # This saves the file on GitHub so you can download it to your phone
         uses: actions/upload-artifact@v4
         with:
-          name: smart-tutor-app
+          name: smart-tutor-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+          - name: 🛠️ Build Android APK
+        run: flutter build apk --release
+
+      - name: 🚚 Upload APK to Website Folder
+        uses: appleboy/scp-action@master
+        with:
+          host: "109.199.120.38"
+          username: "root"
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "build/app/outputs/flutter-apk/app-release.apk"
+          target: "/var/www/smart-tutor"
+          strip_components: 4 # This puts the file directly in /var/www/smart-tutor/
