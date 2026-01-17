@@ -1,0 +1,46 @@
+name: Smart-tutorCI/CD
+
+on:
+  push:
+    branches: [ main ] # Triggers when you push to the main branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v3
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Install Dependencies
+        run: flutter pub get
+
+      - name: 🛠️ Build Flutter Web
+        # Builds the production-ready web assets
+        run: flutter build web --release
+
+      - name: 🚚 Deploy to VPS (SCP)
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{109.199.120.38}}       # IP: 109.199.120.38
+          username: ${{root}} # User: root
+          key: ${{ Sololeveling123}}
+          # Source is the build output from Flutter
+          source: "build/web/*"
+          # Target is your Nginx web root directory
+          target: "/var/www/smart-tutor"
+          strip_components: 2
+
+      - name: 🔄 Refresh Nginx
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{root}}
+          key: ${{Sololeveling123}}
+          # Restarts Nginx to serve the new files immediately
+          script: sudo systemctl restart nginx
