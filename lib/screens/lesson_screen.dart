@@ -125,6 +125,7 @@ class _LessonScreenState extends State<LessonScreen> {
                       const Text(
                         "Available Papers",
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        
                       ),
                       Text("${lessons.length} Files",
                           style: const TextStyle(color: Colors.grey)),
